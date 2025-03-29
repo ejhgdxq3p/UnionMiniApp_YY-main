@@ -1,0 +1,139 @@
+<!--connect.wxml-->
+<view class="container" style="{{cards[currentTrackIndex].avatarUrl ? 'background-image: url('+cards[currentTrackIndex].avatarUrl+');' : ''}}">
+  <!-- 背景虚化层 -->
+  <view class="background-blur"></view>
+  
+  <!-- 背景星星 -->
+  <block wx:for="{{stars}}" wx:key="id">
+    <view 
+      class="star" 
+      style="left: {{item.x}}rpx; top: {{item.y}}rpx; width: {{item.size}}rpx; height: {{item.size}}rpx; opacity: {{item.opacity}};"
+      data-id="{{item.id}}">
+    </view>
+  </block>
+  
+  <!-- 连接页面内容 -->
+  <view class="content">
+    <!-- logo和检索框区域 -->
+    <view class="header-area">
+      <image class="union-logo" src="/images/uinon logo4.png" mode="aspectFit" bindtap="goToFuzzySearch"></image>
+      <view class="search-bar" bindtap="goToFuzzySearch">
+        <view class="search-text">找到他：输入心动瞬间</view>
+      </view>
+      <view class="search-hint" bindtap="goToFuzzySearch">他说他骑过川藏线，曾经当过宿舍泡面经销商</view>
+    </view>
+    
+    <!-- 唱片封面区域 - 下移位置 -->
+    <view class="vinyl-record" bindtap="goToAchievements">
+      <view class="vinyl-disc" style="transform: rotate({{discRotation}}deg)">
+        <!-- 添加唱片遮罩，使头像成为环形 -->
+        <view class="avatar-mask">
+          <image class="vinyl-hole-avatar" 
+               src="{{cards[currentTrackIndex].avatarUrl || '/assets/default-avatar.png'}}" 
+               mode="aspectFill"></image>
+        </view>
+        <!-- 唱片中心挖洞 -->
+        <view class="vinyl-hole"></view>
+      </view>
+    </view>
+    
+    <!-- 歌单式名片列表 - 下移位置 -->
+    <scroll-view class="music-playlist" scroll-y="{{false}}" bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd">
+      <!-- 加载中提示 -->
+      <view class="loading-container" wx:if="{{isLoading}}">
+        <view class="loading-icon"></view>
+        <text class="loading-text">加载中...</text>
+      </view>
+      
+      <!-- 错误提示 -->
+      <view class="error-container" wx:elif="{{loadError}}">
+        <text class="error-text">{{loadError}}</text>
+        <view class="retry-btn" bindtap="getInteractionCards">重试</view>
+      </view>
+      
+      <!-- 空状态提示 -->
+      <view class="empty-container" wx:elif="{{cards.length === 0}}">
+        <view class="empty-icon">🎵</view>
+        <text class="empty-text">暂无社交歌单</text>
+        <text class="empty-subtext">与他人互动后，歌单将显示在这里</text>
+      </view>
+      
+      <!-- 歌单列表 -->
+      <view class="playlist-container" wx:else>
+        <!-- 顶部填充 -->
+        <view class="list-padding"></view>
+        
+        <!-- 实现物理滚动效果的轨道 -->
+        <view class="track-wheel" style="transform: translateY({{scrollOffset}}rpx)">
+          <view class="track-item {{index === currentTrackIndex ? 'active' : ''}}" 
+                wx:for="{{cards}}" 
+                wx:key="index"
+                style="opacity: {{1 - 0.12 * Math.abs(index - currentTrackIndex)}};"
+                data-index="{{index}}"
+                bindtap="viewTrackDetail">
+            <!-- 大型专辑封面式头像 -->
+            <view class="album-cover-container">
+              <view class="album-cover-placeholder" wx:if="{{!item.avatarUrl}}">
+                <text>{{item.name ? item.name[0] : '?'}}</text>
+              </view>
+              <image class="album-cover" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"></image>
+            </view>
+            
+            <view class="track-info">
+              <view class="track-title">{{item.name || '未知名称'}}</view>
+              <view class="track-artist">{{item.company || item.organization || '未知组织'}}</view>
+              
+              <!-- 技能标签作为歌曲风格标签 -->
+              <view class="track-tags" wx:if="{{item.skills && item.skills.length > 0}}">
+                <view class="tag" wx:for="{{item.skills}}" wx:for-item="skill" wx:key="*this" wx:if="{{index < 2}}">
+                  {{skill}}
+                </view>
+                <view class="tag-more" wx:if="{{item.skills.length > 2}}">+{{item.skills.length - 2}}</view>
+              </view>
+            </view>
+          </view>
+        </view>
+        
+        <!-- 底部填充 -->
+        <view class="list-padding"></view>
+      </view>
+    </scroll-view>
+  </view>
+  
+  <!-- 名片预览弹窗 -->
+  <view class="card-preview-modal" wx:if="{{showCardPreview}}">
+    <view class="card-preview-content">
+      <view class="card-preview-close" bindtap="closeCardPreview">×</view>
+      <view class="business-card">
+        <view class="card-header">
+          <image class="card-avatar" src="{{selectedCard.avatarUrl || '/assets/default-avatar.png'}}"></image>
+          <view class="card-basic-info">
+            <view class="card-name">{{selectedCard.name || '未填写姓名'}}</view>
+            <view class="card-position">{{selectedCard.position || '未填写职位'}}</view>
+            <view class="card-organization">{{selectedCard.organization || selectedCard.company || '未填写组织'}}</view>
+          </view>
+        </view>
+        <view class="card-divider"></view>
+        <view class="card-body">
+          <view class="card-intro">{{selectedCard.introduction || '未填写个人介绍'}}</view>
+          <view class="card-skills" wx:if="{{selectedCard.skills && selectedCard.skills.length > 0}}">
+            <view class="card-section-title">技能</view>
+            <view class="card-tags">
+              <view class="card-tag" wx:for="{{selectedCard.skills}}" wx:key="index">{{item}}</view>
+            </view>
+          </view>
+          <view class="card-fields" wx:if="{{selectedCard.fields && selectedCard.fields.length > 0}}">
+            <view class="card-section-title">领域</view>
+            <view class="card-tags">
+              <view class="card-tag" wx:for="{{selectedCard.fields}}" wx:key="index">{{item}}</view>
+            </view>
+          </view>
+          <view class="card-contact" wx:if="{{selectedCard.contact}}">
+            <view class="card-section-title">联系方式</view>
+            <view class="card-contact-value">{{selectedCard.contact}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view> 

@@ -1,0 +1,196 @@
+<view class="container">
+  <view class="header">
+    <view class="back-btn" bindtap="goBack">
+      <text class="cuIcon-back"></text>
+    </view>
+    <view class="header-content">
+      <text class="title">精准营销投放</text>
+      <text class="subtitle">智能分析 · 精准触达 · 高效转化</text>
+    </view>
+  </view>
+
+  <view class="tab-nav">
+    <view class="tab-item {{activeTab === 'segments' ? 'active' : ''}}" bindtap="switchTab" data-tab="segments">
+      <text class="cuIcon-group"></text>
+      <text>用户细分</text>
+    </view>
+    <view class="tab-item {{activeTab === 'campaigns' ? 'active' : ''}}" bindtap="switchTab" data-tab="campaigns">
+      <text class="cuIcon-notice"></text>
+      <text>营销活动</text>
+    </view>
+    <view class="tab-item {{activeTab === 'create' ? 'active' : ''}}" bindtap="switchTab" data-tab="create">
+      <text class="cuIcon-add"></text>
+      <text>创建活动</text>
+    </view>
+  </view>
+
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <text>数据加载中...</text>
+  </view>
+
+  <scroll-view scroll-y class="content-area" wx:if="{{activeTab === 'segments' && !loading}}">
+    <view class="segment-grid">
+      <view class="segment-card" wx:for="{{userSegments}}" wx:key="id" bindtap="viewSegmentDetail" data-id="{{item.id}}">
+        <view class="segment-header">
+          <view class="segment-icon">
+            <text class="cuIcon-people"></text>
+          </view>
+          <view class="segment-info">
+            <text class="segment-name">{{item.name}}</text>
+            <text class="segment-count">{{item.users.length}} 位用户</text>
+          </view>
+        </view>
+        <view class="segment-body">
+          <text class="segment-desc">{{item.description}}</text>
+          <text class="segment-criteria">筛选条件：{{item.criteria}}</text>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view scroll-y class="content-area" wx:if="{{activeTab === 'campaigns' && !loading}}">
+    <view class="campaign-list">
+      <view class="campaign-item" wx:for="{{campaigns}}" wx:key="id">
+        <view class="campaign-header">
+          <text class="campaign-title">{{item.title}}</text>
+          <text class="campaign-status {{item.status}}">{{item.status === 'active' ? '进行中' : '计划中'}}</text>
+        </view>
+        <view class="campaign-content">
+          <text class="campaign-desc">{{item.description}}</text>
+          <view class="campaign-target">
+            <text>目标群体：</text>
+            <text class="target-tag">{{userSegments[item.targetSegment].name}}</text>
+          </view>
+          <view class="campaign-channels">
+            <text>投放渠道：</text>
+            <view class="channel-list">
+              <view class="channel-tag" wx:for="{{item.channels}}" wx:key="*this" wx:for-item="channel">
+                <text class="cuIcon-{{channel.icon}}"></text>
+                <text>{{channel.name}}</text>
+              </view>
+            </view>
+          </view>
+          <view class="campaign-metrics" wx:if="{{item.status === 'active'}}">
+            <view class="metric-item">
+              <text class="metric-value">{{item.stats.sent}}</text>
+              <text class="metric-label">已发送</text>
+            </view>
+            <view class="metric-item">
+              <text class="metric-value">{{item.stats.opened}}</text>
+              <text class="metric-label">已打开</text>
+            </view>
+            <view class="metric-item">
+              <text class="metric-value">{{item.stats.engaged}}</text>
+              <text class="metric-label">已参与</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </scroll-view>
+
+  <scroll-view scroll-y class="content-area" wx:if="{{activeTab === 'create' && !loading}}">
+    <view class="create-form">
+      <view class="form-group">
+        <text class="form-label">活动标题</text>
+        <input class="form-input" placeholder="请输入活动标题" bindinput="handleCampaignInput" data-field="title" value="{{newCampaign.title}}"/>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">活动描述</text>
+        <textarea class="form-textarea" placeholder="请输入活动描述" bindinput="handleCampaignInput" data-field="description" value="{{newCampaign.description}}"/>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">目标用户群体</text>
+        <view class="segment-options">
+          <view class="segment-option {{newCampaign.targetSegment === segment.id ? 'selected' : ''}}" 
+                wx:for="{{userSegments}}" 
+                wx:key="id" 
+                wx:for-item="segment" 
+                bindtap="selectTargetSegment" 
+                data-id="{{segment.id}}">
+            <text class="option-name">{{segment.name}}</text>
+            <text class="option-count">{{segment.users.length}}人</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">投放渠道</text>
+        <view class="channel-options">
+          <view class="channel-option {{newCampaign.channels.includes(channel.id) ? 'selected' : ''}}" 
+                wx:for="{{availableChannels}}" 
+                wx:key="id" 
+                wx:for-item="channel" 
+                bindtap="toggleChannel" 
+                data-id="{{channel.id}}">
+            <text class="cuIcon-{{channel.icon}}"></text>
+            <text>{{channel.name}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="form-group">
+        <text class="form-label">活动内容</text>
+        <textarea class="form-textarea" placeholder="请输入活动内容" bindinput="handleCampaignInput" data-field="content" value="{{newCampaign.content}}"/>
+      </view>
+
+      <view class="form-group date-range">
+        <view class="date-item">
+          <text class="form-label">开始日期</text>
+          <picker mode="date" value="{{newCampaign.startDate}}" bindchange="handleCampaignInput" data-field="startDate">
+            <view class="date-picker">{{newCampaign.startDate}}</view>
+          </picker>
+        </view>
+        <view class="date-item">
+          <text class="form-label">结束日期</text>
+          <picker mode="date" value="{{newCampaign.endDate}}" bindchange="handleCampaignInput" data-field="endDate">
+            <view class="date-picker">{{newCampaign.endDate}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="switchTab" data-tab="campaigns">取消</button>
+        <button class="btn-submit" bindtap="submitCampaign">创建活动</button>
+      </view>
+    </view>
+  </scroll-view>
+
+  <view class="modal {{selectedSegment ? 'show' : ''}}" wx:if="{{selectedSegment}}" catchtap="closeSegmentDetail">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-header">
+        <text class="modal-title">{{selectedSegment.name}}</text>
+        <text class="modal-close" catchtap="closeSegmentDetail">×</text>
+      </view>
+      <view class="modal-body">
+        <view class="modal-stats">
+          <view class="stat-box">
+            <text class="stat-value">{{selectedSegment.users.length}}</text>
+            <text class="stat-label">用户数量</text>
+          </view>
+          <view class="stat-box">
+            <text class="stat-value">{{selectedSegment.criteria}}</text>
+            <text class="stat-label">筛选条件</text>
+          </view>
+        </view>
+        <view class="modal-section">
+          <text class="section-title">群体描述</text>
+          <text class="section-content">{{selectedSegment.description}}</text>
+        </view>
+        <view class="modal-section">
+          <text class="section-title">用户预览</text>
+          <scroll-view class="user-preview" scroll-x>
+            <view class="user-item" wx:for="{{selectedSegment.users}}" wx:key="_id">
+              <image class="user-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"/>
+              <text class="user-name">{{item.nickName || '用户' + (index + 1)}}</text>
+            </view>
+          </scroll-view>
+        </view>
+        <button class="modal-button" catchtap="switchTab" data-tab="create">创建定向营销活动</button>
+      </view>
+    </view>
+  </view>
+</view> 

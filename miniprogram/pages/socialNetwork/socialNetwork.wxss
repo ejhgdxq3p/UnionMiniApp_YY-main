@@ -1,0 +1,186 @@
+/* socialNetwork.wxss */
+.container {
+  background-color: #000;
+  color: #fff;
+  min-height: 100vh;
+  padding: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* 星星样式 */
+.star {
+  position: absolute;
+  background: white;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow: 0 0 4rpx 1rpx rgba(255, 255, 255, 0.7);
+  transform-origin: center center;
+  z-index: 1;
+}
+
+/* 星星放射动画 */
+.star-radiate {
+  animation-name: radiate;
+  animation-timing-function: linear;
+  animation-iteration-count: 1;
+}
+
+@keyframes radiate {
+  0% {
+    transform: scale(0.3) translate(0, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(var(--translateX), var(--translateY));
+    opacity: 0;
+  }
+}
+
+/* 返回按钮 */
+.back-btn {
+  position: absolute;
+  top: 40rpx;
+  left: 40rpx;
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  color: white;
+  padding: 16rpx 30rpx;
+  border-radius: 40rpx;
+  font-size: 28rpx;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  z-index: 100;
+}
+
+.back-icon {
+  margin-right: 10rpx;
+  font-weight: bold;
+}
+
+/* 页面标题 */
+.header {
+  padding: 120rpx 40rpx 60rpx;
+  text-align: center;
+  color: white;
+  z-index: 10;
+  position: relative;
+}
+
+.title {
+  font-size: 56rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+}
+
+.subtitle {
+  font-size: 32rpx;
+  opacity: 0.8;
+}
+
+/* 网络图区域 */
+.network-container {
+  width: 100%;
+  height: 700rpx;
+  position: relative;
+  margin-bottom: 40rpx;
+  z-index: 10;
+}
+
+.network-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* 加载提示 */
+.loading-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 数据统计区域 */
+.stats-container {
+  display: flex;
+  justify-content: space-around;
+  padding: 0 60rpx;
+  margin-bottom: 40rpx;
+  z-index: 10;
+  position: relative;
+}
+
+.stat-item {
+  background-color: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20rpx;
+  padding: 30rpx 20rpx;
+  width: 40%;
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 44rpx;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 图例说明 */
+.legend-container {
+  background-color: #000;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin: 0 30rpx 60rpx;
+  z-index: 10;
+  position: relative;
+}
+
+.legend-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  margin-bottom: 20rpx;
+  color: #fff;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.legend-color {
+  width: 60rpx;
+  height: 30rpx;
+  border-radius: 6rpx;
+  margin-right: 20rpx;
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.legend-line {
+  width: 60rpx;
+  height: 2rpx;
+  background-color: rgba(255, 255, 255, 0.6);
+  margin-right: 20rpx;
+}
+
+.legend-text {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+} 

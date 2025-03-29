@@ -1,0 +1,45 @@
+<!--miniprogram/pages/connectionMap/connectionMap.wxml-->
+<view class="container">
+  <view class="header">
+    <view class="back-button" bindtap="goBack">返回</view>
+    <view class="title">连接地图</view>
+    <view class="refresh-button" bindtap="refreshData">刷新</view>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{isLoading}}">
+    <view class="loading-icon"></view>
+    <text class="loading-text">加载交互数据中...</text>
+  </view>
+  
+  <!-- 错误状态 -->
+  <view class="error-container" wx:elif="{{loadError}}">
+    <text class="error-text">{{loadError}}</text>
+    <view class="retry-btn" bindtap="refreshData">重试</view>
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-container" wx:elif="{{connections.length === 0}}">
+    <view class="empty-icon">🔮</view>
+    <text class="empty-text">暂无交互数据</text>
+    <text class="empty-subtext">与其他用户交互后，关系图将显示在这里</text>
+  </view>
+  
+  <!-- 连接图谱 -->
+  <view class="map-container" wx:else>
+    <canvas type="2d" id="map-canvas" class="connection-map" style="width: {{canvasWidth}}px; height: {{canvasHeight}}px;"></canvas>
+  </view>
+  
+  <view class="legend" wx:if="{{connections.length > 0}}">
+    <view class="legend-item">
+      <view class="legend-dot current"></view>
+      <text class="legend-text">当前用户</text>
+    </view>
+    <view class="legend-item">
+      <view class="legend-dot other"></view>
+      <text class="legend-text">其他用户</text>
+    </view>
+    <view class="legend-title">我的连接关系图</view>
+    <view class="legend-desc">显示您与{{connections.length - 1}}位连接者的关系网络图</view>
+  </view>
+</view> 

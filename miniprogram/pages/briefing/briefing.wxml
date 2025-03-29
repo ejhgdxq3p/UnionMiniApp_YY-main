@@ -1,0 +1,118 @@
+<view class="container">
+  <!-- 动态星空背景 -->
+  <block wx:for="{{stars}}" wx:key="id">
+    <view 
+      class="star" 
+      style="left: {{item.x}}rpx; top: {{item.y}}rpx; width: {{item.size}}rpx; height: {{item.size}}rpx; animation-duration: {{item.duration}}s; animation-delay: {{item.delay}}s;"
+      data-id="{{item.id}}">
+    </view>
+  </block>
+
+  <!-- 3D社交网络球体 -->
+  <canvas wx:if="{{!use2DMode}}" type="webgl" id="webgl" class="earth-canvas" bindtouchstart="onTouchStart" bindtouchmove="onTouchMove" bindtouchend="onTouchEnd"></canvas>
+  
+  <!-- 2D备用模式 -->
+  <view wx:if="{{use2DMode}}" class="fallback-container">
+    <view class="fallback-message">
+      <view class="fallback-icon">
+        <view class="fallback-network">
+          <view class="fallback-node" wx:for="{{12}}" wx:key="index" style="transform: rotate({{index*30}}deg) translateY(-80rpx);"></view>
+          <view class="fallback-center"></view>
+        </view>
+      </view>
+      <text class="fallback-title">3D渲染不可用</text>
+      <text class="fallback-desc">您的设备不支持3D社交网络图谱显示，已切换到简化模式</text>
+    </view>
+  </view>
+
+  <!-- 状态指示器 -->
+  <view class="loading-indicator" wx:if="{{isLoading}}">
+    <view class="spinner"></view>
+    <text class="loading-text">{{loadingText}}</text>
+  </view>
+
+  <!-- 调试信息 -->
+  <view class="debug-info" wx:if="{{debugMode}}">
+    <text>{{webglStatus}}</text>
+  </view>
+
+  <!-- 用户详情弹窗 -->
+  <view class="user-detail {{selectedUser ? 'show' : ''}}" style="{{selectedUser ? 'border-color: '+selectedUser.color : ''}}">
+    <view class="user-header" style="{{selectedUser ? 'background: '+selectedUser.color : ''}}">
+      <text class="user-nickname">{{selectedUser.nickname || '用户信息'}}</text>
+      <view class="close-btn" bindtap="closeUserDetail">×</view>
+    </view>
+    <view class="user-info">
+      <view class="user-organization" wx:if="{{selectedUser.organization}}">
+        <text class="organization">{{selectedUser.organization}}</text>
+      </view>
+      <view class="user-introduction" wx:if="{{selectedUser.introduction}}">
+        <text class="introduction">{{selectedUser.introduction}}</text>
+      </view>
+      <view class="user-skills-tags" wx:if="{{selectedUser.skills && selectedUser.skills.length > 0}}">
+        <text class="tag" wx:for="{{selectedUser.skills}}" wx:key="index">{{item}}</text>
+      </view>
+      <view class="user-fields-tags" wx:if="{{selectedUser.fields && selectedUser.fields.length > 0}}">
+        <text class="tag field-tag" wx:for="{{selectedUser.fields}}" wx:key="index">{{item}}</text>
+      </view>
+      <view class="interaction-stats">
+        <text>交互次数: {{selectedUser.interactionCount || 0}}</text>
+      </view>
+      <view class="user-contact" wx:if="{{selectedUser.contact}}">
+        <text>联系方式: {{selectedUser.contact}}</text>
+      </view>
+
+    </view>
+  </view>
+
+  <!-- 社交简报内容 -->
+  <view class="report-container {{hasReport ? 'show' : ''}}">
+    <scroll-view 
+      class="lyrics-container" 
+      scroll-y="true"
+      scroll-top="{{scrollTop}}"
+      scroll-with-animation="true"
+      bindscroll="onScroll"
+      enhanced="true"
+      show-scrollbar="false">
+      <view class="lyrics">
+        <view 
+          wx:for="{{reportData}}" 
+          wx:key="time" 
+          class="lyric-line {{index === currentLineIndex ? 'highlight' : ''}}"
+          data-index="{{index}}"
+          data-time="{{item.time}}"
+          bindtap="touchLyric">
+          {{item.text}}
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 操作按钮 -->
+  <view class="button-container">
+    <button class="generate-btn {{isGenerating ? 'disabled' : ''}}" bindtap="generateReport" wx:if="{{!hasReport}}" disabled="{{isGenerating}}">
+      {{isGenerating ? '生成中...' : '生成社交简报'}}
+    </button>
+    <view class="multi-buttons" wx:if="{{hasReport}}">
+      <button class="share-btn" bindtap="shareReport">分享报告</button>
+      <button class="restart-btn" bindtap="restartAnimation">重新播放</button>
+    </view>
+  </view>
+
+  <!-- 朋友圈文案弹窗 -->
+  <view class="share-modal-mask" wx:if="{{showShareModal}}" bindtap="closeShareModal">
+    <view class="share-modal-content" catchtap="stopPropagation">
+      <view class="share-modal-header">
+        <text class="share-modal-title">朋友圈文案</text>
+        <view class="share-modal-close" bindtap="closeShareModal">×</view>
+      </view>
+      <view class="share-modal-body">
+        <text class="share-content">{{shareContent}}</text>
+      </view>
+      <view class="share-modal-footer">
+        <button class="copy-btn" bindtap="copyShareContent">复制文案</button>
+      </view>
+    </view>
+  </view>
+</view>

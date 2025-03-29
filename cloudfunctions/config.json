@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "openapi": [
+      "cloud.database"
+    ]
+  },
+  "env": {
+    "ENV_ID": "unionlink-4gkmzbm1babe86a7"
+  }
+} 

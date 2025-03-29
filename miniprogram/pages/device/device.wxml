@@ -1,0 +1,60 @@
+<!--miniprogram/pages/device/device.wxml-->
+<view class="container">
+  <view class="card-container">
+    <!-- 消息区域 -->
+    <view class="message-panel">
+      <view class="panel-header">
+        <text class="panel-title">接收消息</text>
+      </view>
+      <scroll-view class="message-content" scroll-y="true" scroll-with-animation="true" scroll-into-view="msg{{receivedMessages.length-1}}">
+        <block wx:if="{{receivedMessages.length > 0}}">
+          <view wx:for="{{receivedMessages}}" wx:key="time" class="message-item" id="msg{{index}}">
+            <view class="message-time">{{item.time}}</view>
+            <view class="message-bubble">{{item.content}}</view>
+          </view>
+        </block>
+        <view wx:else class="empty-placeholder">
+          <text class="empty-icon">📩</text>
+          <text>等待接收消息...</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- URL提取区域 -->
+    <view class="url-panel" wx:if="{{extractedUrl}}">
+      <view class="panel-header">
+        <text class="panel-title">提取的URL</text>
+      </view>
+      <view class="url-content">
+        <text class="url-text">{{extractedUrl}}</text>
+      </view>
+    </view>
+
+    <!-- 连接状态区域 -->
+    <view class="status-panel">
+      <view class="status-dot {{isConnected ? 'connected' : 'disconnected'}}"></view>
+      <view class="status-text">{{isConnected ? '已连接到ESP32_NFC_BLE' : '未连接到设备'}}</view>
+      <button class="action-button {{isConnected ? 'reset' : 'connect'}}" bindtap="{{isConnected ? 'resetConnection' : 'startBluetoothConnection'}}">
+        {{isConnected ? '重置连接' : '连接设备'}}
+      </button>
+    </view>
+
+    <!-- 日志区域 -->
+    <view class="log-panel">
+      <view class="panel-header">
+        <text class="panel-title">连接日志</text>
+        <button class="clear-button" bindtap="clearLogs">清空</button>
+      </view>
+      <scroll-view class="log-content" scroll-y="true" scroll-with-animation="true" scroll-into-view="log{{connectionLogs.length-1}}">
+        <block wx:if="{{connectionLogs.length > 0}}">
+          <view wx:for="{{connectionLogs}}" wx:key="*this" class="log-item" id="log{{index}}">
+            {{item}}
+          </view>
+        </block>
+        <view wx:else class="empty-placeholder">
+          <text>暂无日志记录</text>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

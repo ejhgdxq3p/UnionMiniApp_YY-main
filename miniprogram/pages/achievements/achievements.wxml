@@ -1,0 +1,65 @@
+<view class="page-container">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav">
+    <view class="nav-title">成就系统</view>
+  </view>
+
+  <!-- 主要内容 -->
+  <view class="container">
+    <!-- 加载中状态 -->
+    <view class="loading-container" wx:if="{{loading}}">
+      <view class="loading-text">加载成就中...</view>
+    </view>
+    
+    <!-- 无成就提示 -->
+    <view class="empty-container" wx:elif="{{achievements.length === 0}}">
+      <image class="empty-image" src="/images/empty-achievement.png" mode="aspectFit"></image>
+      <view class="empty-text">你还没有获得任何成就，继续探索Union来解锁成就吧！</view>
+    </view>
+    
+    <!-- 成就列表 -->
+    <view class="achievements-wrapper" wx:else>
+      <view class="achievements-list">
+        <view class="achievement-card" 
+              wx:for="{{achievements}}" 
+              wx:key="id"
+              bindtap="viewAchievementDetail" 
+              data-id="{{item.name}}">
+          <view class="achievement-image-container {{!showAchievementDetail || selectedAchievement.id !== item.id ? 'rotating' : ''}}">
+            <image class="achievement-image" src="{{item.imageUrl || '/images/uinon logo2.png'}}" mode="aspectFit"></image>
+          </view>
+          <view class="achievement-title">{{item.title}}</view>
+          <view class="achievement-status completed">已完成</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 成就详情弹窗 -->
+    <view class="achievement-detail-modal {{showAchievementDetail ? 'show' : ''}}" bindtap="closeAchievementDetail">
+      <view class="achievement-detail-content" catchtap="preventBubble">
+        <view class="detail-close" bindtap="closeAchievementDetail">×</view>
+        <view class="detail-header">
+          <view class="detail-image-container">
+            <image class="detail-image" src="{{selectedAchievement.imageUrl || '/images/uinon logo2.png'}}" mode="aspectFit"></image>
+          </view>
+          <view class="detail-title">{{selectedAchievement.title}}</view>
+          <view class="detail-status completed">已完成</view>
+        </view>
+        <view class="detail-description">
+          {{selectedAchievement.description}}
+        </view>
+        <view class="detail-progress">
+          <view class="progress-title">完成进度</view>
+          <view class="progress-bar">
+            <view class="progress-fill" style="{{getProgressStyle(selectedAchievement.progress)}}"></view>
+          </view>
+          <view class="progress-text">{{selectedAchievement.progress}}%</view>
+        </view>
+        <view class="detail-tips" wx:if="{{selectedAchievement.tips}}">
+          <view class="tips-title">完成提示</view>
+          <view class="tips-content">{{selectedAchievement.tips}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

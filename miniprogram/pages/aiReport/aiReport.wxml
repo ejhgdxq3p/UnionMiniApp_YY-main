@@ -1,0 +1,93 @@
+<!-- aiReport.wxml -->
+<view class="container">
+  <!-- 顶部导航 -->
+  <view class="header">
+    <view class="header-left">
+      <view class="back-icon" bindtap="goBack">返回</view>
+    </view>
+    <view class="header-title">AI助手</view>
+    <view class="header-right">
+      <view class="clear-icon" bindtap="clearChat">清空</view>
+    </view>
+  </view>
+
+  <!-- 消息列表 -->
+  <scroll-view class="message-list" scroll-y="true" scroll-into-view="{{lastId}}" enable-flex>
+    <block wx:for="{{messages}}" wx:key="id">
+      <!-- 系统消息 -->
+      <view class="message-item system" wx:if="{{item.type === 'system'}}" id="msg-{{index}}">
+        <view class="message-content" style="color: white;">{{item.content}}</view>
+      </view>
+
+      <!-- 用户消息 -->
+      <view class="message-item user" wx:elif="{{item.type === 'user'}}" id="msg-{{index}}">
+        <view class="message-content">
+          <view class="message-bubble user-bubble" style="color: white;">{{item.content}}</view>
+        </view>
+        <view class="message-avatar user-avatar"></view>
+      </view>
+
+      <!-- AI消息 -->
+      <view class="message-item bot" wx:elif="{{item.type === 'bot'}}" id="msg-{{index}}">
+        <view class="message-avatar bot-avatar"></view>
+        <view class="message-content">
+          <view class="message-bubble bot-bubble" style="color: white;">{{item.content}}</view>
+        </view>
+      </view>
+
+      <!-- 错误消息 -->
+      <view class="message-item error" wx:elif="{{item.type === 'error'}}" id="msg-{{index}}">
+        <view class="message-content" style="color: white;">{{item.content}}</view>
+      </view>
+
+      <!-- 数据分析卡片 -->
+      <view class="message-item bot" wx:elif="{{item.type === 'analysis'}}" id="msg-{{index}}">
+        <view class="message-avatar bot-avatar"></view>
+        <view class="message-content">
+          <view class="analysis-card">
+            <view class="analysis-title">互动分析报告</view>
+            
+            <view class="analysis-row">
+              <view class="analysis-label">活动</view>
+              <view class="analysis-value">{{item.content.title}}</view>
+            </view>
+            
+            <view class="analysis-row">
+              <view class="analysis-label">参与者</view>
+              <view class="analysis-value">{{item.content.participants.length}}人</view>
+            </view>
+            
+            <view class="analysis-row">
+              <view class="analysis-label">互动总数</view>
+              <view class="analysis-value">{{item.content.interactions}}次</view>
+            </view>
+            
+            <view class="analysis-row">
+              <view class="analysis-label">时间段</view>
+              <view class="analysis-value">{{item.content.timespan}}</view>
+            </view>
+            
+            <view class="analysis-row">
+              <view class="analysis-label">地点</view>
+              <view class="analysis-value">{{item.content.location}}</view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+
+    <!-- 加载中状态 -->
+    <view class="loading-container" wx:if="{{isLoading}}">
+      <view class="loading-dot"></view>
+      <view class="loading-dot"></view>
+      <view class="loading-dot"></view>
+      <view class="loading-text">思考中...</view>
+    </view>
+  </scroll-view>
+
+  <!-- 底部输入框 -->
+  <view class="input-container">
+    <input class="message-input" value="{{inputValue}}" bindinput="onInput" placeholder="有什么想问的..." placeholder-style="color: rgba(255, 255, 255, 0.5);" confirm-type="send" bindconfirm="sendMessage" />
+    <view class="send-button" bindtap="sendMessage">发送</view>
+  </view>
+</view> 

@@ -1,0 +1,8 @@
+{
+  "navigationBarBackgroundColor": "#000000",
+  "navigationBarTextStyle": "white",
+  "navigationBarTitleText": "成就系统",
+  "backgroundColor": "#000000",
+  "backgroundTextStyle": "light",
+  "enablePullDownRefresh": false
+} 

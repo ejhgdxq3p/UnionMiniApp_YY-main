@@ -1,0 +1,9 @@
+{
+  "name": "unionlink-miniprogram",
+  "version": "1.0.0",
+  "description": "UnionLink小程序",
+  "dependencies": {
+    "three": "^0.137.0",
+    "threejs-miniprogram": "^0.0.8"
+  }
+}

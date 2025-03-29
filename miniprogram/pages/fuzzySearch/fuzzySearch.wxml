@@ -1,0 +1,194 @@
+<!--miniprogram/pages/fuzzySearch/fuzzySearch.wxml-->
+<view class="container">
+  <!-- 自定义导航栏 -->
+  <view class="custom-nav">
+    <view class="nav-back" bindtap="goBack">返回</view>
+    <view class="nav-title">搜索用户</view>
+  </view>
+
+  <!-- 搜索框 -->
+  <view class="search-box">
+    <view class="search-input-wrap">
+      <view class="search-icon">
+        <image src="/images/search.png" mode="aspectFit"></image>
+      </view>
+      <view class="search-input-container">
+        <view class="search-tags" wx:if="{{searchTags.length > 0}}">
+          <view class="search-tag" wx:for="{{searchTags}}" wx:key="index">
+            {{item}}
+            <view class="tag-delete" bindtap="removeSearchTag" data-index="{{index}}">×</view>
+          </view>
+        </view>
+        <input 
+          class="search-input" 
+          type="text" 
+          value="{{searchText}}"
+          placeholder="{{searchTags.length > 0 ? '继续输入关键词' : '记不清关键字？试试模糊检索'}}"
+          bindinput="onSearchInput"
+          confirm-type="search"
+          bindconfirm="onSearch"
+        />
+      </view>
+      <view class="search-buttons">
+        <view class="ai-search-btn" catchtap="switchToFuzzySearch">AI推荐</view>
+        <view class="clear-icon" catchtap="clearSearch" wx:if="{{showClearIcon || searchTags.length > 0}}">×</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 猜你想找区域 -->
+  <view class="suggestion-wrapper">
+    <view class="suggestion-tags-container">
+      <block wx:for="{{aiSuggestions}}" wx:key="index">
+        <view 
+          class="suggestion-tag" 
+          catchtap="addSearchTag"
+          data-tag="{{item}}"
+          data-tag-index="{{index}}"
+          hover-class="suggestion-tag-hover"
+          hover-stay-time="100"
+        >
+          {{item}}
+        </view>
+      </block>
+      <view class="refresh-btn" catchtap="refreshSuggestions">换一批</view>
+    </view>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="search-results" wx:if="{{results.length > 0}}">
+    <view class="result-item {{item.isAIRecommendation ? 'ai-recommendation' : ''}}" wx:for="{{results}}" wx:key="id" bindtap="onUserTap" data-user="{{item}}">
+      <!-- 添加用户头像 -->
+      <view class="result-avatar">
+        <image src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"></image>
+      </view>
+      <view class="result-content">
+        <view class="user-info">
+          <view class="user-name">{{item.name}}</view>
+          <view class="user-title">{{item.title}}</view>
+          <!-- 根据不同的结果类型显示匹配度或AI推荐标记 -->
+          <block wx:if="{{item.isAIRecommendation}}">
+            <view class="ai-tag">
+              AI·{{item.recommendationReason}}
+            </view>
+          </block>
+          <block wx:else>
+            <view class="match-rate {{item.matchScore >= 80 ? 'high' : item.matchScore >= 60 ? 'medium' : 'low'}}">
+              匹配度 {{item.matchScore}}%
+            </view>
+          </block>
+        </view>
+        <view class="user-tags">
+          <view class="tag-section">
+            <view class="tag-section-title">领域</view>
+            <view class="tag field" wx:for="{{item.fields}}" wx:key="index" wx:for-item="field">{{field}}</view>
+          </view>
+          <view class="tag-section">
+            <view class="tag-section-title">技能</view>
+            <view class="tag skill" wx:for="{{item.skills}}" wx:key="index" wx:for-item="skill">{{skill}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 加载中 -->
+  <view class="loading" wx:if="{{loading}}">
+    <view class="loading-icon"></view>
+    <text>正在搜索...</text>
+  </view>
+
+  <!-- 无结果 -->
+  <view class="no-result" wx:if="{{!loading && results.length === 0 && searchText}}">
+    <text>未找到相关用户</text>
+  </view>
+
+  <!-- 用户名片详情弹窗 -->
+  <view class="modal" wx:if="{{showUserDetail}}" bindtap="hideUserDetail">
+    <view class="modal-content" catchtap="stopPropagation">
+      <view class="modal-close" bindtap="hideUserDetail">×</view>
+      <view class="modal-body">
+        <view class="user-detail">
+          <!-- 用户基本信息 -->
+          <view class="user-basic-info">
+            <view class="user-avatar">
+              <image src="{{selectedUser.avatarUrl}}" mode="aspectFill"></image>
+            </view>
+            <view class="user-main-info">
+              <view class="detail-name">{{selectedUser.name}}</view>
+              <view class="detail-title">{{selectedUser.title}}</view>
+              <view class="detail-company">{{selectedUser.organization}}</view>
+            </view>
+          </view>
+
+          <!-- 个人简介 -->
+          <view class="detail-section" wx:if="{{selectedUser.introduction}}">
+            <view class="section-content bio">{{selectedUser.introduction}}</view>
+          </view>
+
+          <!-- 领域标签 -->
+          <view class="detail-section" wx:if="{{selectedUser.fields && selectedUser.fields.length > 0}}">
+            <view class="section-title">领域</view>
+            <view class="section-content">
+              <view class="tag field" wx:for="{{selectedUser.fields}}" wx:key="*this">{{item}}</view>
+            </view>
+          </view>
+
+          <!-- 技能标签 -->
+          <view class="detail-section" wx:if="{{selectedUser.skills && selectedUser.skills.length > 0}}">
+            <view class="section-title">技能</view>
+            <view class="section-content">
+              <view class="tag skill" wx:for="{{selectedUser.skills}}" wx:key="*this">{{item}}</view>
+            </view>
+          </view>
+
+          <!-- 工作经历 -->
+          <view class="detail-section" wx:if="{{selectedUser.experiences && selectedUser.experiences.length > 0}}">
+            <view class="section-title">工作经历</view>
+            <view class="experience-list">
+              <view class="experience-item" wx:for="{{selectedUser.experiences}}" wx:key="index">
+                <view class="experience-header">
+                  <view class="experience-company">{{item.company}}</view>
+                  <view class="experience-period">{{item.period}}</view>
+                </view>
+                <view class="experience-title">{{item.title}}</view>
+                <view class="experience-desc">{{item.description}}</view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 教育背景 -->
+          <view class="detail-section" wx:if="{{selectedUser.education && selectedUser.education.length > 0}}">
+            <view class="section-title">教育背景</view>
+            <view class="education-list">
+              <view class="education-item" wx:for="{{selectedUser.education}}" wx:key="index">
+                <view class="education-header">
+                  <view class="education-school">{{item.school}}</view>
+                  <view class="education-period">{{item.period}}</view>
+                </view>
+                <view class="education-degree">{{item.degree}}</view>
+                <view class="education-major">{{item.major}}</view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 联系方式 -->
+          <view class="detail-section">
+            <view class="section-title">联系方式</view>
+            <view class="contact-list">
+              <!-- 调试信息 -->
+              <view class="contact-item">
+                <text class="contact-value">{{selectedUser.contact}}</text>
+              </view>
+
+ 
+            </view>
+          </view>
+
+          <!-- 连接按钮 -->
+          <view class="connect-btn" bindtap="handleConnect">连接</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view> 

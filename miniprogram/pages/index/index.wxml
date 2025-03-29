@@ -1,0 +1,235 @@
+<!--index.wxml-->
+<view class="container">
+  <!-- 企业版入口 - 新样式 -->
+  <view class="enterprise-corner-new" bindtap="navigateToEnterprise">
+    <view class="page-fold"></view>
+    <view class="corner-text-new">企业版</view>
+  </view>
+
+  <!-- 主页内容 -->
+  <view class="content">
+    <!-- 顶部个人信息区域 -->
+    <view class="profile-header">
+      <!-- 未登录状态 -->
+      <block wx:if="{{!hasUserInfo}}">
+        <view class="user-info">
+          <image class="avatar" src="/assets/default-avatar.png"></image>
+          <view class="username">未登录</view>
+        </view>
+        <button class="login-btn" bindtap="login">微信登录</button>
+      </block>
+      
+      <!-- 已登录状态 -->
+      <block wx:else>
+        <view class="user-info">
+          <!-- 点击头像可以上传新头像 -->
+          <view class="avatar-container" bindtap="chooseAvatar">
+            <image class="avatar" src="{{userInfo.avatarUrl}}"></image>
+          </view>
+          <!-- 点击昵称可以编辑 -->
+          <view class="nickname-container" bindtap="editNickname">
+            <view class="username">{{userInfo.nickName}}</view>
+          </view>
+        </view>
+        <view class="logout-btn" bindtap="logout">退出登录</view>
+      </block>
+    </view>
+    
+    <!-- 登录后才显示个人名片区域 -->
+    <view class="card-section" wx:if="{{hasUserInfo}}">
+      <view class="section-title">个人名片</view>
+      
+      <!-- 基本信息 -->
+      <view class="info-item">
+        <view class="info-label">姓名</view>
+        <view class="info-content">
+          <input type="text" value="{{userInfo.name}}" bindinput="updateName" placeholder="请输入姓名" adjust-position="{{false}}" />
+        </view>
+      </view>
+      
+      <view class="info-item">
+        <view class="info-label">所属组织</view>
+        <view class="info-content">
+          <input type="text" value="{{userInfo.organization}}" bindinput="updateOrganization" placeholder="请输入所属组织" adjust-position="{{false}}" />
+        </view>
+      </view>
+      
+      <view class="info-item">
+        <view class="info-label">个人介绍</view>
+        <view class="info-content">
+          <textarea value="{{userInfo.introduction}}" bindinput="updateIntroduction" placeholder="一句话介绍自己" adjust-position="{{false}}"></textarea>
+        </view>
+      </view>
+      
+      <!-- 技能标签 -->
+      <view class="info-item">
+        <view class="info-label">技能</view>
+        <view class="tags-container">
+          <view class="tag-item" wx:for="{{userInfo.skills}}" wx:key="index">
+            {{item}}
+            <view class="remove-tag" data-index="{{index}}" data-type="skills" catchtap="removeTag">×</view>
+          </view>
+          <view class="add-tag" bindtap="showAddTagModal" data-type="skills">+</view>
+        </view>
+      </view>
+      
+      <!-- 所属领域标签 -->
+      <view class="info-item">
+        <view class="info-label">所属领域</view>
+        <view class="tags-container">
+          <view class="tag-item" wx:for="{{userInfo.fields}}" wx:key="index">
+            {{item}}
+            <view class="remove-tag" data-index="{{index}}" data-type="fields" catchtap="removeTag">×</view>
+          </view>
+          <view class="add-tag" bindtap="showAddTagModal" data-type="fields">+</view>
+        </view>
+      </view>
+      
+      <!-- 联系方式 -->
+      <view class="info-item">
+        <view class="info-label">联系方式</view>
+        <view class="info-content">
+          <input type="text" value="{{userInfo.contact}}" bindinput="updateContact" placeholder="请输入联系方式" adjust-position="{{false}}" />
+        </view>
+      </view>
+      
+      <!-- 位置信息 -->
+      <view class="info-item">
+        <view class="info-label">我的位置</view>
+        <view class="location-container">
+          <block wx:if="{{!hasLocationAuth}}">
+            <view class="no-location" bindtap="requestLocationAuth">
+              <view class="location-icon">📍</view>
+              <view class="location-hint">点击获取位置权限</view>
+            </view>
+          </block>
+          <block wx:else>
+            <map class="location-map" 
+                 latitude="{{location.latitude}}" 
+                 longitude="{{location.longitude}}"
+                 markers="{{[{
+                   id: 1,
+                   latitude: location.latitude,
+                   longitude: location.longitude,
+                   iconPath: '/assets/marker.png',
+                   width: 30,
+                   height: 30
+                 }]}}"
+                 show-location="true"
+                 scale="16">
+            </map>
+          </block>
+        </view>
+      </view>
+      
+      <!-- 保存按钮 -->
+      <view class="save-btn" bindtap="saveProfile">保存更新</view>
+      
+      <!-- 名片预览按钮 -->
+      <view class="preview-btn" bindtap="previewCard">预览名片</view>
+    </view>
+    
+    <!-- 未登录提示 -->
+    <view class="login-hint" wx:if="{{!hasUserInfo}}">
+      <view class="hint-icon">🔒</view>
+      <view class="hint-text">请先登录以编辑个人资料</view>
+    </view>
+  </view>
+  
+  <!-- 添加标签弹窗 -->
+  <view class="modal {{showTagModal ? 'show' : ''}}" catchtouchmove="preventTouchMove" wx:if="{{showTagModal}}">
+    <view class="modal-mask" bindtap="cancelAddTag"></view>
+    <view class="modal-content">
+      <view class="modal-header">添加{{modalType === 'skills' ? '技能' : '领域'}}</view>
+      
+      <!-- 标签输入 -->
+      <view class="input-container">
+        <input type="text" class="modal-input" placeholder="请输入{{modalType === 'skills' ? '技能' : '领域'}}" value="{{newTag}}" bindinput="onTagInput" />
+      </view>
+      
+      <!-- 推荐标签 -->
+      <view class="recommend-tags-title">
+        <text>推荐{{modalType === 'skills' ? '技能' : '领域'}}</text>
+        <text class="switch-tags" bindtap="nextRecommendTags">换一批</text>
+      </view>
+      
+      <view class="recommend-tags">
+        <block wx:if="{{recommendTags.length > 0}}">
+          <view 
+            wx:for="{{recommendTags}}" 
+            wx:key="*this" 
+            class="recommend-tag-item" 
+            bindtap="selectRecommendTag" 
+            data-tag="{{item}}">
+            {{item}}
+          </view>
+        </block>
+        <view wx:else class="no-recommend">暂无推荐标签</view>
+      </view>
+      
+      <view class="modal-footer">
+        <view class="modal-btn cancel" bindtap="cancelAddTag">取消</view>
+        <view class="modal-btn confirm" bindtap="confirmAddTag">确定</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 修改昵称弹窗 -->
+  <view class="modal {{showNicknameModal ? 'show' : ''}}" catchtouchmove="preventTouchMove" wx:if="{{showNicknameModal}}">
+    <view class="modal-mask" bindtap="cancelEditNickname"></view>
+    <view class="modal-content">
+      <view class="modal-header">修改昵称</view>
+      <view class="input-container">
+        <input class="modal-input" 
+          type="text"
+          placeholder="请输入新昵称" 
+          value="{{newNickname}}" 
+          bindinput="onNicknameInput" 
+          focus="{{true}}"
+          maxlength="12"
+          cursor-spacing="100" />
+      </view>
+      <view class="random-nickname-btn" bindtap="generateRandomNickname">随机昵称</view>
+      <view class="modal-footer">
+        <view class="modal-btn cancel" bindtap="cancelEditNickname">取消</view>
+        <view class="modal-btn confirm" bindtap="confirmEditNickname">确定</view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 名片预览弹窗 -->
+  <view class="card-preview-modal" wx:if="{{showCardPreview}}">
+    <view class="card-preview-content">
+      <view class="card-preview-close" bindtap="closeCardPreview">×</view>
+      <view class="business-card">
+        <view class="card-header">
+          <image class="card-avatar" src="{{userInfo.avatarUrl}}"></image>
+          <view class="card-basic-info">
+            <view class="card-name">{{userInfo.name || '未填写姓名'}}</view>
+            <view class="card-organization">{{userInfo.organization || '未填写组织'}}</view>
+          </view>
+        </view>
+        <view class="card-divider"></view>
+        <view class="card-body">
+          <view class="card-intro">{{userInfo.introduction || '未填写个人介绍'}}</view>
+          <view class="card-skills" wx:if="{{userInfo.skills && userInfo.skills.length > 0}}">
+            <view class="card-section-title">技能</view>
+            <view class="card-tags">
+              <view class="card-tag" wx:for="{{userInfo.skills}}" wx:key="index">{{item}}</view>
+            </view>
+          </view>
+          <view class="card-fields" wx:if="{{userInfo.fields && userInfo.fields.length > 0}}">
+            <view class="card-section-title">领域</view>
+            <view class="card-tags">
+              <view class="card-tag" wx:for="{{userInfo.fields}}" wx:key="index">{{item}}</view>
+            </view>
+          </view>
+          <view class="card-contact" wx:if="{{userInfo.contact}}">
+            <view class="card-section-title">联系方式</view>
+            <view class="card-contact-value">{{userInfo.contact}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view> 

@@ -1,0 +1,45 @@
+<!--enterprise.wxml-->
+<view class="container">
+  <!-- 放射状星星背景 -->
+  <view 
+    class="star star-radiate" 
+    wx:for="{{stars}}" 
+    wx:key="id" 
+    data-id="{{item.id}}"
+    style="left: {{item.x}}rpx; top: {{item.y}}rpx; width: {{item.size}}rpx; height: {{item.size}}rpx; --translateX: {{item.translateX}}; --translateY: {{item.translateY}}; animation-duration: {{item.duration}}s;"
+    bindanimationend="onStarAnimationEnd">
+  </view>
+
+  <!-- 返回个人版入口 -->
+  <view class="back-corner" bindtap="navigateToPersonal">
+    <view class="back-btn">
+      <text class="back-icon">←</text>
+      <text>返回</text>
+    </view>
+  </view>
+
+  <!-- 页面标题 -->
+  <view class="header">
+    <view class="title">UnionLink企业版</view>
+    <view class="subtitle">活动社交数据的智能分析平台</view>
+  </view>
+
+  <!-- 企业版功能列表 -->
+  <view class="feature-grid">
+    <view class="feature-item" wx:for="{{features}}" wx:key="title" bindtap="viewFeatureDetail" data-title="{{item.title}}">
+      <view class="feature-icon-circle">
+        <text class="feature-icon-text">{{item.title[0]}}</text>
+      </view>
+      <view class="feature-content">
+        <text class="feature-title">{{item.title}}</text>
+        <text class="feature-description">{{item.description}}</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 联系我们 -->
+  <view class="contact-section">
+    <button class="contact-btn" bindtap="contactUs">联系获取企业版</button>
+    <view class="contact-note">适用于企业级活动策划、社群运营和市场营销</view>
+  </view>
+</view> 
