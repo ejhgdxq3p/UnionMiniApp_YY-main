@@ -1,7 +1,7 @@
 {
-  "name": "login",
+  "name": "generateTestData",
   "version": "1.0.0",
-  "description": "",
+  "description": "Generate test data for users_bar collection",
   "main": "index.js",
   "dependencies": {
     "wx-server-sdk": "~2.6.3"

@@ -22,5 +22,13 @@ App({
     this.checkLoginStatus();
   },
 
-  // 其他方法保持不变
+  // 检查登录状态
+  checkLoginStatus() {
+    const userInfo = wx.getStorageSync('userInfo');
+    if (userInfo && userInfo.openid) {
+      this.globalData.userInfo = userInfo;
+      this.globalData.openid = userInfo.openid;
+      this.globalData.logged = true;
+    }
+  }
 })

@@ -1,18 +1,14 @@
 Component({
   data: {
-    selected: 0,
+    selected: 0, // 重置为默认选中首页
     list: [
-      {
-        pagePath: "pages/device/device",
-        text: "设备"
-      },
       {
         pagePath: "pages/connect/connect",
         text: "连接"
       },
       {
-        pagePath: "pages/briefing/briefing",
-        text: "报告"
+        pagePath: "pages/device/device",
+        text: "设备"
       },
       {
         pagePath: "pages/index/index",
@@ -22,45 +18,45 @@ Component({
   },
 
   methods: {
-    switchTab(e) {
-      const data = e.currentTarget.dataset;
-      const url = '/' + this.data.list[data.index].pagePath;
-      wx.switchTab({ url });
-      this.setData({
-        selected: data.index
-      });
-    }
-  },
-
-  lifetimes: {
-    attached() {
-      const app = getApp();
-      if (!app.globalData.tabBar) {
-        app.globalData.tabBar = { selected: 0 };
+    updateSelected(pagePath) {
+      const index = this.data.list.findIndex(item => ('/' + item.pagePath) === pagePath);
+      if (index !== -1 && this.data.selected !== index) {
+        this.setData({ selected: index });
       }
-      this.setData({
-        selected: app.globalData.tabBar.selected
-      });
     },
-    
-    show() {
-      const app = getApp();
-      const pages = getCurrentPages();
-      const currentPage = pages[pages.length - 1];
+    switchTab(e) {
+      console.log('[TabBar] switchTab被调用', e);
       
-      if (currentPage) {
-        const currentPath = currentPage.route;
-        const matchingTab = this.data.list.find(tab => tab.pagePath === currentPath);
-        if (matchingTab && this.data.selected !== matchingTab.index) {
-          const newSelected = matchingTab.index;
-          // 同样执行两次状态更新
-          this.setData({ selected: newSelected });
-          setTimeout(() => {
-            this.setData({ selected: newSelected });
-          }, 10);
-          app.globalData.tabBar.selected = newSelected;
-        }
+      const data = e.currentTarget.dataset;
+      const index = data.index;
+      
+      console.log('[TabBar] 点击的index:', index);
+      
+      if (index === undefined || index === null) {
+        console.error('[TabBar] 没有找到index');
+        return;
       }
+      
+      const targetPage = this.data.list[index];
+      if (!targetPage) {
+        console.error('[TabBar] 没有找到目标页面');
+        return;
+      }
+      
+      const url = '/' + targetPage.pagePath;
+      console.log('[TabBar] 准备跳转到:', url);
+      
+      // 简单的页面跳转
+      wx.switchTab({ 
+        url: url,
+        success: () => {
+          console.log('[TabBar] 跳转成功');
+          this.setData({ selected: index });
+        },
+        fail: (err) => {
+          console.error('[TabBar] 跳转失败:', err);
+        }
+      });
     }
   }
 }); 

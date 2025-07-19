@@ -23,9 +23,6 @@
  */
 
 // miniprogram/pages/connect/connect.js
-// 引入文字配置
-const Config = require('../../utils/config.js')
-
 Page({
 
   /**
@@ -91,30 +88,17 @@ Page({
     currentUserOpenId: '',   // briefing页面的openid字段
     // 详细名片相关数据
     showDetailedCard: false, // 是否显示详细名片弹窗
-    selectedMember: {},       // 选中的成员数据
-    // 主题颜色相关
-    currentThemeColor: '#00d4ff', // 当前主题颜色
-    themeColors: [
-      '#00d4ff', // 亮天依蓝 - 更加鲜艳明亮
-      '#ff4500', // 亮橙红 - 增强饱和度
-      '#ff69b4', // 亮春樱落霞 - 改为热粉色
-      '#00ff7f'  // 亮宝石绿 - 改为春绿色
-    ],
-    texts: {} // 文字配置
+    selectedMember: {},      // 选中的成员数据
+    // 配对相关数据
+    hasPairedUsers: false,   // 是否已有配对用户
+    pairType: '',           // 配对类型：'已配对', 'AI配对', '社群成员'
+    pairReason: ''          // 配对理由
   },
 
   /**
    * Lifecycle function--Called when page load
    */
   onLoad(options) {
-    // 初始化云开发AI
-    wx.cloud.init({
-      env: "unionlink-4gkmzbm1babe86a7"
-    });
-    
-    // 初始化文字配置
-    this.initTextConfig();
-    
     // 初始化设置向上偏移量
     this.setData({
       cardPositionOffset: -200, // 向上偏移200rpx，使用负值
@@ -184,54 +168,6 @@ Page({
    */
   onShareAppMessage() {
 
-  },
-
-  /**
-   * 初始化文字配置
-   */
-  initTextConfig: function() {
-    // 初始化所有需要的文字
-    const texts = Config.getTexts({
-      // 搜索相关
-      searchPlaceholder: 'connect.search.placeholder',
-      searchHint: 'connect.search.hint',
-      
-      // 加载状态
-      loadingText: 'connect.loading.text',
-      loadingError: 'connect.loading.error',
-      retryButton: 'connect.loading.retry',
-      emptyText: 'connect.loading.empty',
-      emptySubtext: 'connect.loading.emptySubtext',
-      
-      // 配对相关
-      pairingTitle: 'connect.pairing.title',
-      tapHint: 'connect.pairing.tapHint',
-      modalTitle: 'connect.pairing.modalTitle',
-      unknownUser: 'connect.pairing.unknownUser',
-      
-      // 社群相关
-      unknownTheme: 'connect.community.unknownTheme',
-      unknownCommunity: 'connect.community.unknownCommunity',
-      noDescription: 'connect.community.noDescription',
-      memberCount: 'connect.community.memberCount',
-      memberStatus: 'connect.community.memberStatus',
-      sectionTitle: 'connect.community.sectionTitle',
-      featuresTitle: 'connect.community.featuresTitle',
-      scrollHint: 'connect.community.scrollHint',
-      
-      // 通用文字
-      confirm: 'common.confirm',
-      cancel: 'common.cancel',
-      close: 'common.close',
-      loading: 'common.loading',
-      error: 'common.error',
-      retry: 'common.retry',
-      noData: 'common.noData',
-      success: 'common.success',
-      fail: 'common.fail'
-    });
-
-    this.setData({ texts });
   },
 
   /**
@@ -604,8 +540,6 @@ Page({
       // 如果索引变化，触发振动反馈
       if (newIndex !== oldIndex) {
         this.vibrateFeedback();
-        // 更新主题颜色
-        this.updateCurrentThemeColor();
       }
       
       // 自动选中当前项目（但不立即显示预览，只设置选中状态）
@@ -631,9 +565,6 @@ Page({
           currentTrackIndex: targetIndex,
           isInertiaScrolling: false
         });
-        
-        // 更新主题颜色
-        this.updateCurrentThemeColor();
         
         // 动画完成后选中当前项目
         this.setCurrentCardActive();
@@ -714,8 +645,8 @@ Page({
   /**
    * 显示配对用户
    */
-  // 【重写】智能配对逻辑：先检查是否已有配对，如果没有则AI匹配
-  showPairedUsers: async function(index) {
+  // 【重写】先检查是否已有配对，没有则AI配对
+  showPairedUsers: function(index) {
     if (index < 0 || index >= this.data.cards.length) {
       console.error('主题索引无效:', index);
       return;
@@ -725,7 +656,7 @@ Page({
     const classifications = this.data.classifications;
     const currentUserOpenId = this.data.currentUserOpenId;
 
-    console.log('=== 智能配对系统启动 ===');
+    console.log('=== 显示主题配对用户 ===');
     console.log('选中主题:', theme.name);
     console.log('当前用户openid:', currentUserOpenId);
 
@@ -745,20 +676,6 @@ Page({
       return;
     }
 
-    // 步骤1：检查是否已有配对
-    console.log('检查现有配对...');
-    const existingPairs = await this.checkExistingPairs(currentUserOpenId, theme.name);
-    
-    if (existingPairs !== null) {
-      console.log('发现现有配对:', existingPairs);
-      // 显示已配对的用户
-      this.displayPairedUsers(theme, existingPairs);
-      return;
-    }
-
-    // 步骤2：如果没有配对，获取社群成员进行AI匹配
-    console.log('没有现有配对，开始AI智能匹配...');
-    
     // 在classifications中找到对应的主题数据
     const themeData = classifications.find(t => t.theme === theme.name);
     if (!themeData || !themeData.communities) {
@@ -805,43 +722,267 @@ Page({
       return;
     }
 
-    // 步骤3：使用AI对整个部落进行配对分组
-    try {
-      wx.showLoading({
-        title: 'AI智能配对整个部落中...'
-      });
-      
-      // 获取部落所有成员（包括当前用户）
-      const allCommunityMembers = [...communityMembers];
-      allCommunityMembers.push({openid: currentUserOpenId}); // 添加当前用户
-      
-      const groupMatchResult = await this.performTribeGroupMatching(allCommunityMembers, theme.name);
-      
-      if (groupMatchResult && groupMatchResult.pairGroups && groupMatchResult.pairGroups.length > 0) {
-        // 步骤4：保存所有配对组到云端
-        await this.saveAllPairGroupsToCloud(theme.name, groupMatchResult);
-        
-        // 步骤5：找到当前用户所在的配对组并显示
-        const currentUserGroup = this.findCurrentUserGroup(currentUserOpenId, groupMatchResult.pairGroups);
-        if (currentUserGroup) {
-          this.displayCurrentUserPairGroup(theme, currentUserGroup);
-        } else {
-          console.log('未找到当前用户的配对组');
-          this.displayAllCommunityMembers(theme, userCommunity, communityMembers);
+    // 先检查是否已有配对
+    this.checkExistingPairs(theme, userCommunity, communityMembers);
+  },
+
+  /**
+   * 检查是否已有配对
+   */
+  checkExistingPairs: function(theme, userCommunity, communityMembers) {
+    const currentUserOpenId = this.data.currentUserOpenId;
+    
+    console.log('=== 检查现有配对 ===');
+    console.log('主题:', theme.name);
+    console.log('社群:', userCommunity.name);
+    
+    wx.showLoading({
+      title: '检查配对信息...',
+    });
+
+    // 查询connections集合
+    const db = wx.cloud.database();
+    db.collection('connections')
+      .where({
+        theme: theme.name,
+        community: userCommunity.name
+      })
+      .get({
+        success: (res) => {
+          wx.hideLoading();
+          console.log('connections查询结果:', res.data);
+          
+          if (res.data && res.data.length > 0) {
+            // 查找包含当前用户的配对组
+            const userPairGroup = res.data.find(group => 
+              group.pairedUsers && group.pairedUsers.includes(currentUserOpenId)
+            );
+            
+            if (userPairGroup) {
+              console.log('找到现有配对组:', userPairGroup);
+              
+              // 获取配对用户的详细信息
+              const pairedUserIds = userPairGroup.pairedUsers.filter(id => id !== currentUserOpenId);
+              const pairedUsers = communityMembers.filter(member => 
+                pairedUserIds.includes(member.openid)
+              );
+              
+              console.log('配对的用户:', pairedUsers);
+              
+              // 显示配对用户
+              this.showPairedUsersPreview(theme, userCommunity, pairedUsers, '已配对');
+              return;
+            }
+          }
+          
+          // 没有找到配对，开始AI配对
+          console.log('未找到现有配对，开始AI配对');
+          this.requestAIPairing(theme, userCommunity, communityMembers);
+        },
+        fail: (err) => {
+          wx.hideLoading();
+          console.error('查询connections失败:', err);
+          
+          // 查询失败，仍然尝试AI配对
+          console.log('查询失败，继续进行AI配对');
+          this.requestAIPairing(theme, userCommunity, communityMembers);
         }
-      } else {
-        // AI匹配失败，显示所有社群成员
-        console.log('AI部落配对失败，显示所有社群成员');
-        this.displayAllCommunityMembers(theme, userCommunity, communityMembers);
-      }
-      
-    } catch (error) {
-      console.error('AI部落配对过程出错:', error);
-      // 匹配失败，显示所有社群成员
-      this.displayAllCommunityMembers(theme, userCommunity, communityMembers);
-    } finally {
-      wx.hideLoading();
+      });
+  },
+
+  /**
+   * 请求AI配对
+   */
+  requestAIPairing: async function(theme, userCommunity, communityMembers) {
+    const currentUserOpenId = this.data.currentUserOpenId;
+    
+    console.log('=== 开始AI配对 ===');
+    console.log('社群成员数量:', communityMembers.length);
+    
+    if (communityMembers.length === 0) {
+      wx.showToast({
+        title: '社群中暂无其他成员可配对',
+        icon: 'none'
+      });
+      return;
     }
+
+    wx.showLoading({
+      title: 'AI智能配对中...',
+    });
+
+    try {
+      // 初始化云开发AI
+      wx.cloud.init({
+        env: "unionlink-4gkmzbm1babe86a7"
+      });
+
+      // 构建AI提示词
+      const membersInfo = communityMembers.map(member => {
+        const userInfo = member.userInfo || {};
+        const responses = member.responses || {};
+        
+        return {
+          openid: member.openid,
+          昵称: userInfo.nickName || '未设置',
+          问卷回答: responses
+        };
+      }).slice(0, 10); // 限制最多10个成员，避免prompt过长
+
+      const prompt = `你是一个智能社交配对专家。请为用户在"${theme.name}"主题下的"${userCommunity.name}"社群中找到1-2位最适合的配对伙伴。
+
+社群描述：${userCommunity.description || '无'}
+
+社群成员信息：
+${JSON.stringify(membersInfo, null, 2)}
+
+请根据成员的问卷回答、兴趣爱好等信息，分析他们的兼容性和互补性，选择1-2位最适合配对的成员。
+
+请严格按照以下JSON格式返回，不要添加任何其他文字：
+{
+  "pairedUsers": ["openid1", "openid2"],
+  "reason": "配对理由，说明为什么这些用户适合配对"
+}`;
+
+      console.log('AI提示词:', prompt);
+
+      // 创建模型并调用
+      const model = wx.cloud.extend.AI.createModel("deepseek");
+      const res = await model.generateText({
+        model: "deepseek-v3-function-call",
+        messages: [{ role: "user", content: prompt }],
+      });
+
+      console.log('AI返回原始结果:', res);
+
+      // 解析AI返回结果
+      let aiResult;
+      try {
+        // 获取AI返回的内容
+        const aiContent = res.choices[0].message.content;
+        console.log('AI返回内容:', aiContent);
+        
+        // 尝试解析JSON
+        aiResult = JSON.parse(aiContent);
+        console.log('解析后的AI结果:', aiResult);
+      } catch (parseError) {
+        console.error('解析AI返回结果失败:', parseError);
+        throw new Error('AI返回结果格式异常');
+      }
+
+      if (!aiResult.pairedUsers || !Array.isArray(aiResult.pairedUsers)) {
+        throw new Error('AI返回的配对用户格式异常');
+      }
+
+      // 验证配对用户是否存在
+      const validPairedUsers = aiResult.pairedUsers.filter(openid => 
+        communityMembers.some(member => member.openid === openid)
+      );
+
+      if (validPairedUsers.length === 0) {
+        throw new Error('AI返回的配对用户无效');
+      }
+
+      console.log('有效的配对用户:', validPairedUsers);
+
+      // 保存配对结果到云端
+      await this.saveConnectionToCloud(theme, userCommunity, [currentUserOpenId, ...validPairedUsers], aiResult.reason);
+
+      // 获取配对用户的详细信息
+      const pairedUsers = communityMembers.filter(member => 
+        validPairedUsers.includes(member.openid)
+      );
+
+      wx.hideLoading();
+
+      // 显示配对结果
+      this.showPairedUsersPreview(theme, userCommunity, pairedUsers, 'AI配对', aiResult.reason);
+
+    } catch (error) {
+      wx.hideLoading();
+      console.error('AI配对失败:', error);
+      
+      wx.showModal({
+        title: '配对失败',
+        content: `AI配对过程中出现错误：${error.message}。是否显示社群所有成员？`,
+        showCancel: true,
+        confirmText: '显示所有成员',
+        cancelText: '稍后重试',
+        success: (res) => {
+          if (res.confirm) {
+            // 显示所有社群成员
+            this.showPairedUsersPreview(theme, userCommunity, communityMembers, '社群成员');
+          }
+        }
+      });
+    }
+  },
+
+  /**
+   * 保存配对结果到云端
+   */
+  saveConnectionToCloud: function(theme, userCommunity, pairedUsers, reason) {
+    return new Promise((resolve, reject) => {
+      console.log('=== 保存配对结果到云端 ===');
+      console.log('主题:', theme.name);
+      console.log('社群:', userCommunity.name);
+      console.log('配对用户:', pairedUsers);
+      console.log('配对理由:', reason);
+
+      const db = wx.cloud.database();
+      
+      // 保存配对结果
+      db.collection('connections').add({
+        data: {
+          theme: theme.name,
+          community: userCommunity.name,
+          pairedUsers: pairedUsers,
+          reason: reason,
+          createTime: new Date(),
+          updateTime: new Date()
+        },
+        success: (res) => {
+          console.log('配对结果保存成功:', res._id);
+          resolve(res);
+        },
+        fail: (err) => {
+          console.error('配对结果保存失败:', err);
+          reject(err);
+        }
+      });
+    });
+  },
+
+  /**
+   * 显示配对用户预览
+   */
+  showPairedUsersPreview: function(theme, userCommunity, pairedUsers, pairType, reason) {
+    console.log('=== 显示配对用户预览 ===');
+    console.log('配对类型:', pairType);
+    console.log('配对用户数量:', pairedUsers.length);
+    console.log('配对理由:', reason);
+
+    // 显示配对用户预览
+    this.setData({
+      showCardPreview: true,
+      selectedCard: {
+        ...theme,
+        pairedUsers: pairedUsers,
+        communityName: userCommunity.name,
+        communityDescription: userCommunity.description,
+        totalMembers: userCommunity.members.length,
+        otherMembersCount: pairedUsers.length,
+        pairType: pairType,
+        pairReason: reason
+      }
+    });
+
+    console.log('显示配对预览:', {
+      主题: theme.name,
+      社群: userCommunity.name,
+      配对类型: pairType,
+      配对用户数: pairedUsers.length
+    });
   },
 
   /**
@@ -1127,8 +1268,6 @@ Page({
                 console.log('[ConnectPage] 社群分析完成，数据已加载');
                 // 成功后加载社群成员数据
                 this.loadCommunityMembers();
-                // 更新主题颜色
-                this.updateCurrentThemeColor();
               },
               fail: loginErr => {
                 console.error('获取用户信息失败', loginErr);
@@ -1271,76 +1410,6 @@ Page({
         });
       }
     });
-  },
-
-  /**
-   * 获取当前用户在主题中的社群颜色（带缓存优化）
-   */
-  getCurrentThemeColor: function() {
-    const currentThemeIndex = this.data.currentTrackIndex;
-    const currentCard = this.data.cards[currentThemeIndex];
-    
-    // 首先检查卡片是否已有缓存的用户颜色
-    if (currentCard && currentCard.userCachedColor) {
-      console.log('使用缓存的用户颜色:', currentCard.userCachedColor);
-      return currentCard.userCachedColor;
-    }
-    
-    const classifications = this.data.classifications;
-    const currentUserOpenid = this.data.currentUserOpenId;
-    
-    if (!classifications || !classifications[currentThemeIndex] || !currentUserOpenid) {
-      const defaultColor = this.data.themeColors[0];
-      this.cacheUserColorToCard(currentThemeIndex, defaultColor);
-      return defaultColor;
-    }
-    
-    const currentTheme = classifications[currentThemeIndex];
-    const communities = currentTheme.communities || [];
-    
-    // 找到用户所在的社群索引
-    for (let i = 0; i < communities.length; i++) {
-      const community = communities[i];
-      if (community.members && community.members.some(member => member.openid === currentUserOpenid)) {
-        // 根据社群索引返回对应颜色，确保不超出颜色数组范围
-        const colorIndex = i % this.data.themeColors.length;
-        const userColor = this.data.themeColors[colorIndex];
-        console.log(`用户在第${i + 1}个社群，使用第${colorIndex + 1}个颜色:`, userColor);
-        
-        // 缓存颜色到卡片数据中
-        this.cacheUserColorToCard(currentThemeIndex, userColor);
-        return userColor;
-      }
-    }
-    
-    // 如果没找到用户，返回默认颜色
-    console.log('未找到用户所在社群，使用默认颜色');
-    const defaultColor = this.data.themeColors[0];
-    this.cacheUserColorToCard(currentThemeIndex, defaultColor);
-    return defaultColor;
-  },
-
-  /**
-   * 缓存用户颜色到卡片数据中
-   */
-  cacheUserColorToCard: function(themeIndex, color) {
-    const cards = [...this.data.cards];
-    if (cards[themeIndex]) {
-      cards[themeIndex].userCachedColor = color;
-      this.setData({ cards });
-      console.log(`缓存颜色 ${color} 到主题 ${themeIndex}`);
-    }
-  },
-
-  /**
-   * 更新当前主题颜色
-   */
-  updateCurrentThemeColor: function() {
-    const themeColor = this.getCurrentThemeColor();
-    this.setData({
-      currentThemeColor: themeColor
-    });
-    console.log('更新主题颜色为:', themeColor);
   },
 
   /**
@@ -1520,10 +1589,6 @@ Page({
     console.log('成员索引:', memberIndex);
     console.log('选中成员:', selectedMember);
     
-    // 设置加载状态并显示弹窗
-    selectedMember.isGeneratingReason = true;
-    selectedMember.matchReason = null;
-    
     this.setData({
       showDetailedCard: true,
       selectedMember: selectedMember
@@ -1533,270 +1598,6 @@ Page({
       用户昵称: selectedMember.userInfo?.nickName,
       用户openid: selectedMember.openid
     });
-    
-    // 异步生成AI匹配理由
-    this.generateMatchReason(selectedMember);
-  },
-
-  /**
-   * 生成AI匹配理由（带缓存）
-   */
-  generateMatchReason: async function(selectedMember) {
-    try {
-      console.log('=== 开始生成AI匹配理由 ===');
-      
-      // 获取当前用户的openid
-      const currentUserOpenid = this.data.currentUserOpenId;
-      if (!currentUserOpenid) {
-        console.error('当前用户openid为空');
-        this.updateMatchReasonError('无法获取用户信息');
-        return;
-      }
-      
-      // 生成缓存键
-      const currentTheme = this.data.cards[this.data.currentTrackIndex];
-      const themeName = currentTheme?.name || '未知主题';
-      const cacheKey = this.generateMatchReasonCacheKey(currentUserOpenid, selectedMember.openid, themeName);
-      
-      // 先检查本地缓存
-      const cachedReason = this.getMatchReasonFromCache(cacheKey);
-      if (cachedReason) {
-        console.log('从缓存获取匹配理由:', cachedReason);
-        this.updateMatchReason(cachedReason);
-        return;
-      }
-      
-      console.log('缓存中无匹配理由，开始AI生成...');
-      
-      // 从users_bar获取两个用户的详细信息
-      const bothUserOpenids = [currentUserOpenid, selectedMember.openid];
-      const bothUsersDetails = await this.getUsersDetailFromUsersBar(bothUserOpenids);
-      
-      if (!bothUsersDetails || bothUsersDetails.length < 2) {
-        console.error('无法获取两个用户的详细信息');
-        this.updateMatchReasonError('获取用户信息失败');
-        return;
-      }
-      
-      const currentUser = bothUsersDetails.find(user => user.openid === currentUserOpenid);
-      const targetUser = bothUsersDetails.find(user => user.openid === selectedMember.openid);
-      
-      if (!currentUser || !targetUser) {
-        console.error('用户信息不完整');
-        this.updateMatchReasonError('用户信息不完整');
-        return;
-      }
-      
-      console.log('当前用户信息:', currentUser);
-      console.log('目标用户信息:', targetUser);
-      
-      // 构建AI提示词
-      const prompt = this.buildMatchReasonPrompt(currentUser, targetUser);
-      
-      // 调用AI模型
-      const model = wx.cloud.extend.AI.createModel("deepseek");
-      const response = await model.generateText({
-        model: "deepseek-v3-function-call",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      });
-
-      console.log('AI匹配理由原始响应:', response);
-      
-      if (response && response.choices && response.choices.length > 0) {
-        const aiResult = response.choices[0].message.content;
-        console.log('AI匹配理由结果:', aiResult);
-        
-        // 缓存AI结果
-        this.saveMatchReasonToCache(cacheKey, aiResult);
-        
-        // 更新匹配理由
-        this.updateMatchReason(aiResult);
-      } else {
-        console.error('AI响应格式异常:', response);
-        this.updateMatchReasonError('AI分析失败，请稍后重试');
-      }
-      
-    } catch (error) {
-      console.error('生成AI匹配理由失败:', error);
-      this.updateMatchReasonError('网络异常，请稍后重试');
-    }
-  },
-
-  /**
-   * 构建AI匹配理由提示词
-   */
-  buildMatchReasonPrompt: function(currentUser, targetUser) {
-    const currentTheme = this.data.cards[this.data.currentTrackIndex];
-    const themeName = currentTheme?.name || '未知主题';
-    
-    return `你是一个专业的社交配对分析师。请分析两个用户在"${themeName}"主题下的匹配度，并给出详细的匹配理由。
-
-用户A（当前用户）信息：
-- 昵称: ${currentUser.userInfo?.nickName || '匿名用户'}
-- 性别: ${currentUser.userInfo?.gender === 1 ? '男' : currentUser.userInfo?.gender === 2 ? '女' : '未知'}
-- 城市: ${currentUser.userInfo?.city || '未知'}
-- 省份: ${currentUser.userInfo?.province || '未知'}
-- 问卷答案: ${JSON.stringify(currentUser.questionnaire || currentUser.questionnaireAnswers || {}, null, 2)}
-
-用户B（匹配对象）信息：
-- 昵称: ${targetUser.userInfo?.nickName || '匿名用户'}
-- 性别: ${targetUser.userInfo?.gender === 1 ? '男' : targetUser.userInfo?.gender === 2 ? '女' : '未知'}
-- 城市: ${targetUser.userInfo?.city || '未知'}
-- 省份: ${targetUser.userInfo?.province || '未知'}
-- 问卷答案: ${JSON.stringify(targetUser.questionnaire || targetUser.questionnaireAnswers || {}, null, 2)}
-
-请从以下几个维度分析他们的匹配度：
-1. **价值观契合度**：分析问卷答案中体现的价值观、生活态度的相似性和互补性
-2. **兴趣爱好匹配**：找出共同兴趣点和可以互相学习的领域
-3. **性格互补性**：分析两人性格特点，是否能形成良好的互补关系
-4. **地理便利性**：考虑地理位置对交流的影响
-5. **主题适配度**：在"${themeName}"这个主题下，两人有哪些共同语言和话题
-
-请用温暖、友好、具体的语言写出200-300字的匹配理由，让用户感受到这个配对的意义和价值。避免空泛的描述，要基于具体的信息点来分析。`;
-  },
-
-  /**
-   * 更新匹配理由成功
-   */
-  updateMatchReason: function(reason) {
-    const selectedMember = this.data.selectedMember;
-    selectedMember.isGeneratingReason = false;
-    selectedMember.matchReason = reason;
-    
-    this.setData({
-      selectedMember: selectedMember
-    });
-    
-    console.log('AI匹配理由更新成功:', reason);
-  },
-
-  /**
-   * 更新匹配理由失败
-   */
-  updateMatchReasonError: function(errorMsg) {
-    const selectedMember = this.data.selectedMember;
-    selectedMember.isGeneratingReason = false;
-    selectedMember.matchReason = errorMsg;
-    
-    this.setData({
-      selectedMember: selectedMember
-    });
-    
-    console.log('AI匹配理由更新失败:', errorMsg);
-  },
-
-  /**
-   * 生成匹配理由缓存键
-   */
-  generateMatchReasonCacheKey: function(userOpenid1, userOpenid2, themeName) {
-    // 对两个openid进行排序，确保缓存键的一致性（A-B 和 B-A 应该是同一个键）
-    const sortedOpenids = [userOpenid1, userOpenid2].sort();
-    return `match_reason_${sortedOpenids[0]}_${sortedOpenids[1]}_${themeName}`;
-  },
-
-  /**
-   * 从本地缓存获取匹配理由
-   */
-  getMatchReasonFromCache: function(cacheKey) {
-    try {
-      const cachedData = wx.getStorageSync(cacheKey);
-      if (cachedData) {
-        const now = Date.now();
-        // 缓存有效期：7天（7 * 24 * 60 * 60 * 1000）
-        const cacheExpiry = 7 * 24 * 60 * 60 * 1000;
-        
-        if (now - cachedData.timestamp < cacheExpiry) {
-          console.log('匹配理由缓存命中:', cacheKey);
-          return cachedData.reason;
-        } else {
-          console.log('匹配理由缓存已过期，删除:', cacheKey);
-          wx.removeStorageSync(cacheKey);
-          return null;
-        }
-      }
-      
-      console.log('匹配理由缓存未命中:', cacheKey);
-      return null;
-    } catch (error) {
-      console.error('读取匹配理由缓存失败:', error);
-      return null;
-    }
-  },
-
-  /**
-   * 保存匹配理由到本地缓存
-   */
-  saveMatchReasonToCache: function(cacheKey, reason) {
-    try {
-      const cacheData = {
-        reason: reason,
-        timestamp: Date.now()
-      };
-      
-      wx.setStorageSync(cacheKey, cacheData);
-      console.log('匹配理由已缓存:', cacheKey);
-      
-      // 清理过期缓存（可选，避免存储空间过大）
-      this.cleanExpiredMatchReasonCache();
-      
-    } catch (error) {
-      console.error('保存匹配理由缓存失败:', error);
-    }
-  },
-
-  /**
-   * 清理过期的匹配理由缓存
-   */
-  cleanExpiredMatchReasonCache: function() {
-    try {
-      const now = Date.now();
-      const cacheExpiry = 7 * 24 * 60 * 60 * 1000; // 7天
-      
-      // 获取所有存储的键
-      const storageInfo = wx.getStorageInfoSync();
-      const keysToRemove = [];
-      
-      storageInfo.keys.forEach(key => {
-        if (key.startsWith('match_reason_')) {
-          try {
-            const cachedData = wx.getStorageSync(key);
-            if (cachedData && cachedData.timestamp) {
-              if (now - cachedData.timestamp >= cacheExpiry) {
-                keysToRemove.push(key);
-              }
-            } else {
-              // 数据格式异常，也删除
-              keysToRemove.push(key);
-            }
-          } catch (error) {
-            // 读取失败，删除这个键
-            keysToRemove.push(key);
-          }
-        }
-      });
-      
-      // 批量删除过期缓存
-      keysToRemove.forEach(key => {
-        try {
-          wx.removeStorageSync(key);
-          console.log('清理过期匹配理由缓存:', key);
-        } catch (error) {
-          console.error('删除过期缓存失败:', key, error);
-        }
-      });
-      
-      if (keysToRemove.length > 0) {
-        console.log(`清理了${keysToRemove.length}个过期的匹配理由缓存`);
-      }
-      
-    } catch (error) {
-      console.error('清理过期缓存时出错:', error);
-    }
   },
 
   /**
@@ -1833,602 +1634,6 @@ Page({
     wx.showToast({
       title: '社群详情功能开发中',
       icon: 'none'
-    });
-  },
-
-  /**
-   * 检查用户是否已有配对 - 按主题->社群->配对组结构查询
-   */
-  checkExistingPairs: async function(userOpenid, themeName) {
-    try {
-      console.log('检查现有配对:', userOpenid, themeName);
-      
-      const db = wx.cloud.database();
-      
-      // 查询该主题的记录
-      const result = await db.collection('connections')
-        .where({
-          _id: themeName
-        })
-        .get();
-
-      console.log('检查配对结果:', result);
-      
-      if (result.data && result.data.length > 0) {
-        const themeRecord = result.data[0];
-        
-        // 遍历所有社群查找用户配对
-        if (themeRecord.communities) {
-          for (const communityName in themeRecord.communities) {
-            const pairGroups = themeRecord.communities[communityName];
-            
-            // 在该社群的配对组中查找用户
-            for (const pairGroup of pairGroups) {
-              if (pairGroup.includes(userOpenid)) {
-                // 找到用户所在的配对组
-                const otherUserOpenids = pairGroup.filter(openid => openid !== userOpenid);
-                
-                console.log('发现配对，社群:', communityName, '其他成员openids:', otherUserOpenids);
-                
-                // 获取其他成员的详细信息
-                if (otherUserOpenids.length > 0) {
-                  const otherUsersDetails = await this.getUsersDetailFromUsersBar(otherUserOpenids);
-                  console.log('发现现有配对:', otherUsersDetails);
-                  return otherUsersDetails;
-                }
-                
-                // 如果是单人组，返回空数组表示已配对但无其他成员
-                return [];
-              }
-            }
-          }
-        }
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('检查配对时出错:', error);
-      return null;
-    }
-  },
-
-  /**
-   * 使用AI对整个部落进行分组配对
-   */
-  performTribeGroupMatching: async function(allCommunityMembers, themeName) {
-    try {
-      console.log('开始AI部落配对:', '总人数:', allCommunityMembers.length);
-      
-      // 步骤1：从users_bar获取所有部落成员的详细信息
-      const allOpenids = allCommunityMembers.map(member => member.openid);
-      
-      console.log('准备从users_bar获取部落所有成员详细信息，openids:', allOpenids);
-      
-      const detailedUsers = await this.getUsersDetailFromUsersBar(allOpenids);
-      if (!detailedUsers || detailedUsers.length === 0) {
-        console.error('无法获取部落成员详细信息');
-        return null;
-      }
-      
-      console.log('获取到部落成员详细信息数量:', detailedUsers.length);
-      
-      // 步骤2：构建AI部落配对的提示词
-      const prompt = this.buildTribeGroupingPrompt(detailedUsers, themeName);
-      
-      // 步骤3：调用AI模型
-      const model = wx.cloud.extend.AI.createModel("deepseek");
-      const response = await model.generateText({
-        model: "deepseek-v3-function-call",
-        messages: [
-          {
-            role: "user",
-            content: prompt
-          }
-        ]
-      });
-
-      console.log('AI部落配对原始响应:', response);
-      
-      if (response && response.choices && response.choices.length > 0) {
-        const aiResult = response.choices[0].message.content;
-        console.log('AI部落配对结果:', aiResult);
-        
-        // 解析AI返回的配对组结果
-        const groupMatchResult = this.parseAIGroupMatchResult(aiResult);
-        return groupMatchResult;
-      } else {
-        console.error('AI响应格式异常:', response);
-        return null;
-      }
-      
-    } catch (error) {
-      console.error('AI部落配对失败:', error);
-      return null;
-    }
-  },
-
-  /**
-   * 从users_bar获取用户详细信息 - 支持大量用户数据获取
-   */
-  getUsersDetailFromUsersBar: async function(openids) {
-    try {
-      console.log('=== 调试users_bar数据获取 ===');
-      console.log('请求的openids数量:', openids.length);
-      console.log('请求的openids:', openids);
-      
-      const db = wx.cloud.database();
-      const MAX_LIMIT = 100; // 小程序端每次查询的最大限制
-      const allUsers = [];
-      
-      // 微信小程序的 db.command.in() 有20个值的限制，所以需要分批查询
-      const batchSize = 20; // 每批最多查询20个openid
-      const batches = Math.ceil(openids.length / batchSize);
-      
-      console.log(`需要分${batches}批查询，每批最多${batchSize}个用户`);
-      
-      for (let i = 0; i < batches; i++) {
-        const batchOpenids = openids.slice(i * batchSize, (i + 1) * batchSize);
-        console.log(`第${i + 1}批查询，openids:`, batchOpenids);
-        
-        try {
-          const result = await db.collection('users_bar')
-            .where({
-              openid: db.command.in(batchOpenids)
-            })
-            .limit(MAX_LIMIT) // 明确设置限制为100，确保不受默认20条限制
-            .get();
-            
-          console.log(`第${i + 1}批查询结果:`, result.data ? result.data.length : 0, '条数据');
-          
-          if (result.data && result.data.length > 0) {
-            allUsers.push(...result.data);
-            
-            // 详细检查每个用户的数据结构（只在第一批时打印详细信息）
-            if (i === 0) {
-              result.data.forEach((user, index) => {
-                console.log(`用户${index + 1}数据结构:`, {
-                  openid: user.openid,
-                  有userInfo: !!user.userInfo,
-                  有questionnaire: !!user.questionnaire,
-                  有questionnaireAnswers: !!user.questionnaireAnswers,
-                  questionnaire类型: typeof user.questionnaire,
-                  questionnaire内容: user.questionnaire,
-                  所有字段: Object.keys(user)
-                });
-              });
-            }
-          }
-        } catch (batchError) {
-          console.error(`第${i + 1}批查询失败:`, batchError);
-          // 继续执行下一批，不要因为一批失败就停止
-        }
-      }
-
-      console.log(`总共成功获取到 ${allUsers.length} 个用户的详细信息（请求了${openids.length}个）`);
-      
-      if (allUsers.length === 0) {
-        console.log('users_bar中未找到对应用户，尝试查看集合是否存在数据');
-        
-        // 尝试查询所有数据看看集合情况
-        const allResult = await db.collection('users_bar').limit(5).get();
-        console.log('users_bar集合样本数据（前5条）:', allResult.data);
-      }
-      
-      return allUsers;
-    } catch (error) {
-      console.error('从users_bar获取用户信息失败:', error);
-      return [];
-    }
-  },
-
-    /**
-   * 构建AI部落分组配对提示词
-   */
-  buildTribeGroupingPrompt: function(allUserDetails, themeName) {
-    console.log('=== 调试AI部落配对提示词构建 ===');
-    console.log('部落所有成员原始数据:', allUserDetails);
-    
-    // 格式化所有部落成员信息
-    const tribeMembers = allUserDetails.map((user, index) => ({
-      序号: index + 1,
-      openid: user.openid,
-      基本信息: {
-        昵称: user.userInfo?.nickName || '未知',
-        性别: user.userInfo?.gender === 1 ? '男' : user.userInfo?.gender === 2 ? '女' : '未知',
-        城市: user.userInfo?.city || '未知',
-        省份: user.userInfo?.province || '未知'
-      },
-      问卷答案: user.questionnaire || user.questionnaireAnswers || {},
-      提交时间: user.createTime || user.submitTime || '未知'
-    }));
-
-    console.log('格式化后的部落成员信息:', tribeMembers);
-    tribeMembers.forEach((member, index) => {
-      console.log(`部落成员${index + 1}问卷答案详情:`, allUserDetails[index]?.questionnaire || allUserDetails[index]?.questionnaireAnswers);
-    });
-
-    return `你是一个专业的社交配对AI助手。请对整个部落的所有成员在${themeName}主题下进行智能分组配对。
-
-部落所有成员信息：
-${JSON.stringify(tribeMembers, null, 2)}
-
-配对原则：
-1. **问卷答案匹配度**：分析问卷回答的相似性和互补性，寻找价值观、兴趣爱好匹配的用户
-2. **个性互补**：选择能够互相学习、互补优势的用户组合  
-3. **地理位置**：优先考虑同城或同省用户，便于线下交流
-4. **主题适配度**：结合${themeName}主题特点，选择在该领域有共同语言的用户
-5. **小组构成**：每个配对组2-3人，确保每个人都被分配到组
-
-任务：请将所有${tribeMembers.length}个部落成员分成若干个2-3人的配对小组。
-
-**重要：请直接返回纯净的JSON格式，不要添加任何说明文字或代码块标记。**
-
-{
-  "pairGroups": [
-    {
-      "groupId": 1,
-      "openids": ["openid1", "openid2", "openid3"]
-    },
-    {
-      "groupId": 2, 
-      "openids": ["openid4", "openid5"]
-    }
-  ],
-  "reason": "详细说明分组逻辑和每个组的匹配理由"
-}`;
-  },
-
-  /**
-   * 解析AI部落分组配对结果
-   */
-  parseAIGroupMatchResult: function(aiResult) {
-    try {
-      console.log('开始解析AI部落分组结果:', aiResult);
-      
-      // 首先尝试直接解析JSON
-      let result;
-      try {
-        result = JSON.parse(aiResult);
-      } catch (directParseError) {
-        console.log('直接JSON解析失败，尝试提取JSON片段');
-        
-        // 如果直接解析失败，尝试提取JSON代码块
-        const jsonMatch = aiResult.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch && jsonMatch[1]) {
-          console.log('找到JSON代码块:', jsonMatch[1]);
-          result = JSON.parse(jsonMatch[1]);
-        } else {
-          // 尝试查找大括号包围的JSON内容
-          const braceMatch = aiResult.match(/\{[\s\S]*\}/);
-          if (braceMatch && braceMatch[0]) {
-            console.log('找到大括号JSON内容:', braceMatch[0]);
-            result = JSON.parse(braceMatch[0]);
-          } else {
-            throw new Error('无法在AI响应中找到有效的JSON格式');
-          }
-        }
-      }
-      
-      if (result && result.pairGroups && Array.isArray(result.pairGroups)) {
-        // 验证分组结果
-        const validGroups = result.pairGroups.filter(group => {
-          return group.openids && Array.isArray(group.openids) && group.openids.length > 0;
-        });
-        
-        console.log('AI部落分组解析成功:', {
-          总分组数: validGroups.length,
-          分组详情: validGroups.map(g => `组${g.groupId}: ${g.openids.length}人`),
-          分组理由: result.reason
-        });
-        
-        return {
-          pairGroups: validGroups,
-          reason: result.reason || '基于AI智能算法对部落进行分组配对'
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('解析AI部落分组结果失败:', error, '原始结果:', aiResult);
-      return null;
-    }
-  },
-
-  /**
-   * 解析AI匹配结果（使用users_bar的详细信息）- 保留原函数用于兼容
-   */
-  parseAIMatchResult: function(aiResult, candidateDetails) {
-    try {
-      console.log('开始解析AI结果:', aiResult);
-      
-      // 首先尝试直接解析JSON
-      let result;
-      try {
-        result = JSON.parse(aiResult);
-      } catch (directParseError) {
-        console.log('直接JSON解析失败，尝试提取JSON片段');
-        
-        // 如果直接解析失败，尝试提取JSON代码块
-        const jsonMatch = aiResult.match(/```json\s*([\s\S]*?)\s*```/);
-        if (jsonMatch && jsonMatch[1]) {
-          console.log('找到JSON代码块:', jsonMatch[1]);
-          result = JSON.parse(jsonMatch[1]);
-        } else {
-          // 尝试查找大括号包围的JSON内容
-          const braceMatch = aiResult.match(/\{[\s\S]*\}/);
-          if (braceMatch && braceMatch[0]) {
-            console.log('找到大括号JSON内容:', braceMatch[0]);
-            result = JSON.parse(braceMatch[0]);
-          } else {
-            throw new Error('无法在AI响应中找到有效的JSON格式');
-          }
-        }
-      }
-      
-      if (result && result.pairedUsers && Array.isArray(result.pairedUsers)) {
-        // 验证并补充用户信息（从candidateDetails中获取完整信息）
-        const validPairs = result.pairedUsers
-          .map(pair => {
-            const fullUser = candidateDetails.find(user => user.openid === pair.openid);
-            if (fullUser) {
-              return {
-                ...fullUser, // 包含完整的users_bar信息
-                匹配分数: pair.匹配分数 || 0,
-                ai推荐昵称: pair.昵称
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
-        
-        // 处理复杂的reason结构
-        let reasonText = '';
-        if (typeof result.reason === 'string') {
-          reasonText = result.reason;
-        } else if (result.reason && typeof result.reason === 'object') {
-          // 如果reason是对象，提取其中的信息
-          if (result.reason.匹配逻辑 && Array.isArray(result.reason.匹配逻辑)) {
-            reasonText = result.reason.匹配逻辑.join('; ');
-          } else {
-            reasonText = JSON.stringify(result.reason);
-          }
-          
-          if (result.reason.注意事项) {
-            reasonText += '; ' + result.reason.注意事项;
-          }
-        } else {
-          reasonText = '基于AI智能算法为您匹配';
-        }
-        
-        console.log('AI匹配解析成功:', {
-          匹配用户数: validPairs.length,
-          匹配理由: reasonText
-        });
-        
-        return {
-          pairedUsers: validPairs,
-          reason: reasonText
-        };
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('解析AI结果失败:', error, '原始结果:', aiResult);
-      
-      // 如果JSON解析失败，尝试简单匹配前1-2个用户
-      const fallbackPairs = candidateDetails.slice(0, Math.min(2, candidateDetails.length));
-      return {
-        pairedUsers: fallbackPairs,
-        reason: 'AI解析失败，为您随机推荐同社群成员。稍后将基于问卷数据进行更精准匹配。'
-      };
-    }
-  },
-
-  /**
-   * 保存所有部落分组到云端 - 按主题->社群->配对组结构存储
-   */
-  saveAllPairGroupsToCloud: async function(themeName, groupMatchResult) {
-    try {
-      console.log('保存部落分组结果到云端:', themeName, groupMatchResult);
-      
-      // 首先需要获取当前用户所在的社群名称
-      const classifications = this.data.classifications;
-      const currentUserOpenId = this.data.currentUserOpenId;
-      
-      // 找到当前主题和用户所在社群
-      const themeData = classifications.find(t => t.theme === themeName);
-      if (!themeData || !themeData.communities) {
-        throw new Error('未找到主题数据或社群信息');
-      }
-      
-      let userCommunityName = null;
-      for (const community of themeData.communities) {
-        if (community.members && community.members.some(member => member.openid === currentUserOpenId)) {
-          userCommunityName = community.name;
-          break;
-        }
-      }
-      
-      if (!userCommunityName) {
-        throw new Error('未找到用户所在社群');
-      }
-      
-      console.log('用户所在社群:', userCommunityName);
-      
-      const db = wx.cloud.database();
-      
-      // 查找是否已存在该主题的记录
-      const existingRecord = await db.collection('connections')
-        .where({
-          _id: themeName
-        })
-        .get();
-      
-      // 准备配对组数据 - 只要openid数组的数组
-      const pairGroupsData = groupMatchResult.pairGroups.map(group => group.openids);
-      
-      if (existingRecord.data && existingRecord.data.length > 0) {
-        // 更新现有记录
-        const updateData = {};
-        updateData[`communities.${userCommunityName}`] = pairGroupsData;
-        
-        const result = await db.collection('connections')
-          .doc(themeName)
-          .update({
-            data: updateData
-          });
-          
-        console.log('更新主题配对数据成功:', result);
-        return result;
-      } else {
-        // 创建新记录
-        const newRecord = {
-          _id: themeName,
-          communities: {
-            [userCommunityName]: pairGroupsData
-          }
-        };
-        
-        const result = await db.collection('connections').add({
-          data: newRecord
-        });
-        
-        console.log('创建新主题配对数据成功:', result);
-        return result;
-      }
-    } catch (error) {
-      console.error('保存部落分组失败:', error);
-      throw error;
-    }
-  },
-
-  /**
-   * 总结问卷答案（用于存储摘要）
-   */
-  summarizeQuestionnaire: function(questionnaireAnswers) {
-    if (!questionnaireAnswers || typeof questionnaireAnswers !== 'object') {
-      return '暂无问卷数据';
-    }
-    
-    // 简单提取关键信息
-    const keys = Object.keys(questionnaireAnswers);
-    if (keys.length === 0) {
-      return '问卷数据为空';
-    }
-    
-    const summary = keys.slice(0, 3).map(key => {
-      const value = questionnaireAnswers[key];
-      let displayValue = '';
-      
-      if (typeof value === 'string') {
-        displayValue = value.substring(0, 30);
-      } else if (Array.isArray(value)) {
-        displayValue = value.join(',').substring(0, 30);
-      } else if (typeof value === 'object' && value !== null) {
-        displayValue = JSON.stringify(value).substring(0, 30);
-      } else {
-        displayValue = String(value);
-      }
-      
-      return `${key}: ${displayValue}`;
-    }).join('; ');
-    
-    return summary || '问卷数据格式异常';
-  },
-
-  /**
-   * 显示配对的用户
-   */
-  displayPairedUsers: function(theme, pairedUsers) {
-    console.log('显示配对用户:', pairedUsers);
-    
-    this.setData({
-      showCardPreview: true,
-      selectedCard: {
-        ...theme,
-        pairedUsers: pairedUsers,
-        isPaired: true
-      }
-    });
-  },
-
-  /**
-   * 查找当前用户所在的配对组
-   */
-  findCurrentUserGroup: function(currentUserOpenId, pairGroups) {
-    for (const group of pairGroups) {
-      if (group.openids && group.openids.includes(currentUserOpenId)) {
-        console.log('找到当前用户所在分组:', group);
-        return group;
-      }
-    }
-    console.log('未找到当前用户所在的分组');
-    return null;
-  },
-
-  /**
-   * 显示当前用户的配对组
-   */
-  displayCurrentUserPairGroup: async function(theme, currentUserGroup) {
-    try {
-      console.log('显示当前用户配对组:', currentUserGroup);
-      
-      // 获取组内其他成员的详细信息用于显示
-      const otherMemberOpenids = currentUserGroup.openids.filter(openid => openid !== this.data.currentUserOpenId);
-      
-      if (otherMemberOpenids.length > 0) {
-        const otherMembersDetails = await this.getUsersDetailFromUsersBar(otherMemberOpenids);
-        
-        this.setData({
-          showCardPreview: true,
-          selectedCard: {
-            ...theme,
-            pairedUsers: otherMembersDetails,
-            isPaired: true
-          }
-        });
-        
-        console.log('显示配对组成功:', {
-          组内总人数: currentUserGroup.openids.length,
-          其他成员数: otherMembersDetails.length
-        });
-      } else {
-        console.log('配对组中只有当前用户一人');
-        this.setData({
-          showCardPreview: true,
-          selectedCard: {
-            ...theme,
-            pairedUsers: [],
-            isPaired: true
-          }
-        });
-      }
-    } catch (error) {
-      console.error('显示配对组失败:', error);
-      wx.showToast({
-        title: '显示配对信息失败',
-        icon: 'none'
-      });
-    }
-  },
-
-  /**
-   * 显示所有社群成员（备用方案）
-   */
-  displayAllCommunityMembers: function(theme, userCommunity, communityMembers) {
-    console.log('显示所有社群成员:', communityMembers.length);
-    
-    this.setData({
-      showCardPreview: true,
-      selectedCard: {
-        ...theme,
-        pairedUsers: communityMembers,
-        communityName: userCommunity.name,
-        communityDescription: userCommunity.description,
-        totalMembers: userCommunity.members.length,
-        otherMembersCount: communityMembers.length,
-        isPaired: false
-      }
     });
   }
 })

@@ -1,60 +1,96 @@
-<!--miniprogram/pages/device/device.wxml-->
-<view class="container">
-  <view class="card-container">
-    <!-- 消息区域 -->
-    <view class="message-panel">
-      <view class="panel-header">
-        <text class="panel-title">接收消息</text>
+<view>
+  <!-- ===== 扫描界面 ===== -->
+  <view wx:if="{{showScanView}}">
+    <!-- 扫描按钮，点击触发 startScan，显示加载状态 -->
+    <button bindtap="startScan" loading="{{scanning}}">扫描蓝牙设备</button>
+    
+    <!-- 设备列表，遍历 devices 数组 -->
+    <view wx:for="{{devices}}" wx:key="deviceId">
+      <view 
+        class="device-item {{item.name && item.name.startsWith('Un') ? 'device-un' : 'device-normal'}}"
+        bindtap="connectDevice" 
+        data-deviceid="{{item.deviceId}}">
+        <!-- 显示设备名称（无名则显示未知设备） -->
+        <text>{{item.name || '未知设备'}}</text>
+        <!-- 显示设备 MAC 地址 -->
+        <text class="device-mac">({{item.deviceId}})</text>
+        <!-- 显示设备信号强度 RSSI -->
+        <text class="device-rssi">RSSI: {{item.RSSI !== undefined ? item.RSSI : '-'}}</text>
       </view>
-      <scroll-view class="message-content" scroll-y="true" scroll-with-animation="true" scroll-into-view="msg{{receivedMessages.length-1}}">
-        <block wx:if="{{receivedMessages.length > 0}}">
-          <view wx:for="{{receivedMessages}}" wx:key="time" class="message-item" id="msg{{index}}">
-            <view class="message-time">{{item.time}}</view>
-            <view class="message-bubble">{{item.content}}</view>
-          </view>
-        </block>
-        <view wx:else class="empty-placeholder">
-          <text class="empty-icon">📩</text>
-          <text>等待接收消息...</text>
+    </view>
+  </view>
+
+  <!-- ===== 设备详情界面 ===== -->
+  <view wx:else>
+    <!-- 显示当前设备ID -->
+    <view class="section">
+      <text>设备ID：{{deviceId}}</text>
+      <button bindtap="backToScan" size="mini" style="float: right;">返回扫描</button>
+    </view>
+    
+    <!-- 显示连接状态 -->
+    <view class="section">
+      <text>连接状态：{{connected ? (deviceReady ? '已连接并就绪' : '已连接，准备中...') : '未连接'}}</text>
+      <view wx:if="{{connected && !deviceReady}}" style="margin-top: 16rpx;">
+        <text style="color: #007aff; font-size: 24rpx;">正在订阅设备通知特征，请稍等...</text>
+      </view>
+    </view>
+    
+    <!-- 显示服务列表 -->
+    <view class="section">
+      <text>服务列表：</text>
+      <view wx:for="{{services}}" wx:key="uuid">
+        <text>{{item.uuid}}</text>
+      </view>
+    </view>
+    
+    <!-- 消息收发区域 -->
+    <view class="section">
+      <text>消息收发：</text>
+      <view class="msg-list">
+        <!-- 遍历消息列表 -->
+        <view wx:for="{{messages}}" wx:key="index" class="msg-item">
+          <text>{{item}}</text>
         </view>
-      </scroll-view>
-    </view>
-
-    <!-- URL提取区域 -->
-    <view class="url-panel" wx:if="{{extractedUrl}}">
-      <view class="panel-header">
-        <text class="panel-title">提取的URL</text>
       </view>
-      <view class="url-content">
-        <text class="url-text">{{extractedUrl}}</text>
+      <!-- 输入框和发送按钮 -->
+      <input placeholder="输入消息" value="{{input}}" bindinput="onInput" />
+      <view style="display: flex; gap: 16rpx; margin-top: 16rpx;">
+        <button bindtap="sendMsg" disabled="{{!connected}}">发送</button>
+        <button bindtap="testChineseMessage" size="mini">测试中文</button>
       </view>
     </view>
 
-    <!-- 连接状态区域 -->
-    <view class="status-panel">
-      <view class="status-dot {{isConnected ? 'connected' : 'disconnected'}}"></view>
-      <view class="status-text">{{isConnected ? '已连接到ESP32_NFC_BLE' : '未连接到设备'}}</view>
-      <button class="action-button {{isConnected ? 'reset' : 'connect'}}" bindtap="{{isConnected ? 'resetConnection' : 'startBluetoothConnection'}}">
-        {{isConnected ? '重置连接' : '连接设备'}}
-      </button>
-    </view>
-
-    <!-- 日志区域 -->
-    <view class="log-panel">
-      <view class="panel-header">
-        <text class="panel-title">连接日志</text>
-        <button class="clear-button" bindtap="clearLogs">清空</button>
-      </view>
-      <scroll-view class="log-content" scroll-y="true" scroll-with-animation="true" scroll-into-view="log{{connectionLogs.length-1}}">
-        <block wx:if="{{connectionLogs.length > 0}}">
-          <view wx:for="{{connectionLogs}}" wx:key="*this" class="log-item" id="log{{index}}">
-            {{item}}
-          </view>
-        </block>
-        <view wx:else class="empty-placeholder">
-          <text>暂无日志记录</text>
+    <!-- 设备通知区域 -->
+    <view class="section">
+      <text>设备通知：</text>
+      <view class="notify-list">
+        <view wx:for="{{notifications}}" wx:key="index" class="notify-item">
+          <text class="notify-time">{{item.time}}</text>
+          <text class="notify-content">{{item.content}}</text>
         </view>
-      </scroll-view>
+      </view>
     </view>
+
+    <!-- 颜色方案设置 -->
+    <view class="section">
+      <text>自定义距离灯光颜色：</text>
+      <view style="display:flex;align-items:center;margin-top:12rpx;">
+        <text style="width:60rpx;">近</text>
+        <input placeholder="#RRGGBB" value="{{colorNear}}" data-type="near" bindinput="onColorInput" style="flex:1;margin-right:16rpx;" />
+      </view>
+      <view style="display:flex;align-items:center;margin-top:12rpx;">
+        <text style="width:60rpx;">中</text>
+        <input placeholder="#RRGGBB" value="{{colorMid}}" data-type="mid" bindinput="onColorInput" style="flex:1;margin-right:16rpx;" />
+      </view>
+      <view style="display:flex;align-items:center;margin-top:12rpx;">
+        <text style="width:60rpx;">远</text>
+        <input placeholder="#RRGGBB" value="{{colorFar}}" data-type="far" bindinput="onColorInput" style="flex:1;margin-right:16rpx;" />
+      </view>
+      <button bindtap="sendColors" disabled="{{!connected}}" style="margin-top:16rpx;">发送颜色方案</button>
+    </view>
+
+    <!-- 断开连接按钮 -->
+    <button bindtap="disconnect" type="warn" style="margin-top:32rpx;">断开连接</button>
   </view>
 </view>

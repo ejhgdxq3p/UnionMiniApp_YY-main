@@ -8,22 +8,32 @@
   height: 100vh;
   background-color: #000; /* 背景改为黑色 */
   overflow: hidden;
+}
+
+/* 主题背景图片 */
+.theme-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  z-index: -2;
 }
 
-/* 背景虚化层调整为纯黑色 */
+/* 背景虚化层调整为毛玻璃效果 */
 .background-blur {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  background-color: #000; /* 改为纯黑色 */
-  z-index: 0;
+  backdrop-filter: blur(40px) saturate(1.2);
+  -webkit-backdrop-filter: blur(40px) saturate(1.2);
+  background-color: rgba(0, 0, 0, 0.6); /* 半透明黑色 */
+  z-index: -1;
 }
 
 .navbar {
@@ -78,7 +88,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
   padding-top: 0; /* 修改顶部内边距，为logo和检索框留出空间 */
 }
@@ -336,93 +346,126 @@
   padding: 4rpx 0;
 }
 
-/* 唱片封面区域 */
-.vinyl-record {
-  width: 500rpx;
-  height: 500rpx;
-  margin: 20rpx auto;
+/* 发光环区域 */
+.glow-orb-container {
+  display: flex;
+  flex-shrink: 0;
+  width: min(90vw, 400rpx);
+  height: min(90vw, 400rpx);
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 40rpx;
+  margin-bottom: 40rpx;
   position: relative;
   z-index: 10;
+  align-items: center;
+  justify-content: center;
+  /* 增强容器级别的光晕效果 */
+  filter: drop-shadow(0 0 120rpx rgba(255, 255, 255, 0.15));
 }
 
-/* 黑胶唱片样式 - 修改为中间挖洞，内部有白色圆环 */
-.vinyl-disc {
-  width: 100%;
-  height: 100%;
+/* 发光环主体 - 增强发光效果 */
+.glow-orb {
+  width: 240rpx;
+  height: 240rpx;
   border-radius: 50%;
   position: relative;
-  overflow: hidden; /* 改为hidden以裁剪内容 */
-  box-shadow: 0 0 30rpx rgba(0, 0, 0, 0.5); /* 调整阴影 */
-  animation: rotate 20s linear infinite;
-  transform-origin: center center;
-  background-color: #111; /* 唱片底色 */
-  border: 6rpx solid #222; /* 外边框颜色 */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  /* 增强的外部发光效果 */
+  filter: drop-shadow(0 0 40rpx currentColor) 
+          drop-shadow(0 0 80rpx currentColor) 
+          drop-shadow(0 0 120rpx currentColor);
 }
 
-/* 移除外部白色圆环 */
-.vinyl-disc::before {
-  display: none;
-}
-
-/* 添加内部白色圆环 */
-.avatar-mask {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  overflow: hidden;
-  z-index: 2;
-}
-
-/* 头像环效果 */
-.avatar-mask::after {
+/* 主环结构 */
+/* 主环 - 增大尺寸 */
+.glow-orb::before {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 120rpx; /* 增大白色圆环尺寸 */
-  height: 120rpx; /* 增大白色圆环尺寸 */
-  transform: translate(-50%, -50%);
+  top: 10rpx;
+  left: 10rpx;
+  right: 10rpx;
+  bottom: 10rpx;
   border-radius: 50%;
-  border: 8rpx solid white; /* 白色圆环 */
-  z-index: 3;
-  pointer-events: none;
+  border: 12rpx solid;
+  border-color: currentColor;
+  background: transparent;
+  animation: ring-pulse 2.5s ease-in-out infinite;
 }
 
-/* 唱片中心头像 - 改为覆盖整个唱片 */
-.vinyl-hole-avatar {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  position: relative;
-  z-index: 1;
-  object-fit: cover;
-}
-
-/* 唱片中心挖洞 */
-.vinyl-hole {
-  width: 100rpx; /* 增大洞的尺寸 */
-  height: 100rpx; /* 增大洞的尺寸 */
-  border-radius: 50%;
-  background-color: #000; /* 黑色中心洞 */
+/* 内环光晕 - 增大尺寸 */
+.orb-inner-glow {
   position: absolute;
   top: 50%;
   left: 50%;
+  width: 200rpx;
+  height: 200rpx;
   transform: translate(-50%, -50%);
-  z-index: 5;
-  border: 3rpx solid #444; /* 中心洞边框 */
+  border-radius: 50%;
+  border: 3rpx solid;
+  border-color: transparent currentColor transparent currentColor;
+  animation: inner-ring-rotate 4s linear infinite;
+  opacity: 0.7;
 }
 
-/* 旋转动画 */
-@keyframes rotate {
+/* 外环光晕 - 增大尺寸 */
+.glow-orb::after {
+  content: '';
+  position: absolute;
+  top: 0rpx;
+  left: 0rpx;
+  right: 0rpx;
+  bottom: 0rpx;
+  border-radius: 50%;
+  border: 2rpx solid;
+  border-color: currentColor transparent currentColor transparent;
+  animation: outer-ring-rotate 6s linear infinite reverse;
+  opacity: 0.5;
+}
+
+/* 主环脉冲动画 */
+@keyframes ring-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+}
+
+/* 内环旋转动画 */
+@keyframes inner-ring-rotate {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* 外环反向旋转动画 */
+@keyframes outer-ring-rotate {
   from {
     transform: rotate(0deg);
   }
   to {
     transform: rotate(360deg);
   }
+}
+
+/* 点击效果 - 增强发光 */
+.glow-orb-container:active .glow-orb {
+  transform: scale(0.92);
+  filter: drop-shadow(0 0 30rpx currentColor) 
+          drop-shadow(0 0 60rpx currentColor) 
+          drop-shadow(0 0 90rpx currentColor);
+}
+
+.glow-orb-container:active .glow-orb::before {
+  transform: scale(1.1);
 }
 
 /* 歌单式名片列表 - 更改为黑色背景 */
@@ -730,15 +773,25 @@
 
 .card-preview-close {
   position: absolute;
-  top: -60rpx;
-  right: 0;
-  color: white;
+  top: 20rpx;
+  right: 30rpx;
   font-size: 50rpx;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.3s ease;
   width: 60rpx;
   height: 60rpx;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.card-preview-close:hover {
+  color: #ff6b6b;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .business-card {
@@ -828,10 +881,24 @@
   color: rgba(255, 255, 255, 0.7); /* 改为半透明白色 */
 }
 
-.vinyl-record:active .vinyl-disc {
-  transform: scale(0.98) !important;
-  box-shadow: 0 5rpx 15rpx rgba(0, 0, 0, 0.15);
+/* 新增主题相关样式 */
+.card-concept-text {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20rpx;
+  line-height: 1.6;
+  font-style: italic;
 }
+
+.card-philosophy-text {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 20rpx;
+  line-height: 1.6;
+  font-weight: 500;
+}
+
+/* 移除旧的唱片点击效果 */
 
 /* 星星样式 */
 .star {
@@ -846,4 +913,746 @@
 @keyframes twinkle {
   0%, 100% { opacity: 0.2; }
   50% { opacity: 0.7; }
+}
+
+/* 配对用户展示区 */
+.pair-section {
+  width: 90%;
+  margin: 40rpx auto 0 auto;
+  background: rgba(0,0,0,0.7);
+  border-radius: 24rpx;
+  padding: 30rpx 0 20rpx 0;
+  box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.18);
+  border: 1px solid rgba(255,255,255,0.15);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pair-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 20rpx;
+  letter-spacing: 2rpx;
+}
+.pair-list {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 40rpx;
+}
+.pair-user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+.pair-user-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pair-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 2rpx solid #fff;
+  margin-bottom: 10rpx;
+  object-fit: cover;
+  background: #222;
+}
+
+.pair-tap-hint {
+  position: absolute;
+  top: -8rpx;
+  right: -8rpx;
+  background: transparent;
+  border: 2rpx solid;
+  border-radius: 20rpx;
+  padding: 4rpx 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: tap-bounce 2s infinite ease-in-out;
+  z-index: 10;
+  /* 添加发光效果 */
+  box-shadow: 0 0 8rpx currentColor, 0 0 16rpx currentColor;
+  filter: drop-shadow(0 0 6rpx currentColor);
+}
+
+.tap-text {
+  font-size: 18rpx;
+  font-weight: bold;
+}
+
+@keyframes tap-bounce {
+  0%, 100% {
+    transform: translateY(0);
+    box-shadow: 0 0 8rpx currentColor, 0 0 16rpx currentColor;
+  }
+  50% {
+    transform: translateY(-4rpx);
+    box-shadow: 0 0 12rpx currentColor, 0 0 24rpx currentColor, 0 0 36rpx currentColor;
+  }
+}
+
+.pair-nickname {
+  font-size: 26rpx;
+  color: #fff;
+  text-align: center;
+  max-width: 120rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 配对理由弹窗 */
+.pair-modal {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pair-modal-mask {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 1;
+}
+.pair-modal-content {
+  position: relative;
+  z-index: 2;
+  background: #111;
+  border-radius: 24rpx;
+  padding: 60rpx 40rpx 40rpx 40rpx;
+  min-width: 500rpx;
+  max-width: 90vw;
+  box-shadow: 0 8rpx 32rpx rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pair-modal-close {
+  position: absolute;
+  top: 20rpx;
+  right: 30rpx;
+  font-size: 48rpx;
+  color: #fff;
+  z-index: 3;
+  font-weight: bold;
+}
+.pair-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+.pair-modal-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 2rpx solid #fff;
+  margin-bottom: 10rpx;
+  object-fit: cover;
+  background: #222;
+}
+.pair-modal-nickname {
+  font-size: 30rpx;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+}
+.pair-modal-reason-title {
+  font-size: 28rpx;
+  color: #fff;
+  font-weight: bold;
+  margin-bottom: 10rpx;
+  letter-spacing: 2rpx;
+}
+.pair-modal-reason {
+  font-size: 26rpx;
+  color: #fff;
+  line-height: 1.7;
+  text-align: center;
+  word-break: break-all;
+  max-width: 90vw;
+}
+
+/* 社群成员展示样式 */
+.card-members {
+  margin-top: 20rpx;
+}
+
+
+
+.member-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12rpx;
+  transition: all 0.3s ease;
+  min-width: 100rpx;
+}
+
+.member-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2rpx);
+}
+
+.member-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 50%;
+  margin-bottom: 8rpx;
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.member-name {
+  font-size: 22rpx;
+  color: #ffffff;
+  text-align: center;
+  max-width: 80rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 弹窗滚动区域样式 */
+.card-body-scroll {
+  max-height: 60vh; /* 最大高度为视窗高度的60% */
+  min-height: 200rpx; /* 最小高度 */
+  overflow-y: auto;
+  /* 添加渐变阴影提示滚动 */
+  background: linear-gradient(rgba(17, 17, 17, 1) 0%, rgba(17, 17, 17, 0.9) 100%);
+}
+
+/* 滚动容器的滚动条样式（在支持的平台上） */
+.card-body-scroll::-webkit-scrollbar {
+  width: 4rpx;
+}
+
+.card-body-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2rpx;
+}
+
+.card-body-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2rpx;
+}
+
+.card-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* 优化弹窗整体布局 */
+.card-preview-content {
+  max-height: 85vh; /* 弹窗整体最大高度 */
+  overflow: hidden; /* 防止弹窗超出屏幕 */
+}
+
+.business-card {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+/* 确保成员网格在滚动容器中正常显示 */
+.members-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20rpx;
+  margin-top: 10rpx;
+  padding-bottom: 20rpx; /* 添加底部间距，避免最后一行被切断 */
+}
+
+/* 滚动提示样式 */
+.scroll-hint {
+  margin-top: 30rpx;
+  text-align: center;
+  padding: 20rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.scroll-hint-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+  opacity: 0.8;
+}
+
+/* ============ 简易名片列表样式 ============ */
+
+/* 简易名片列表容器 */
+.member-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15rpx;
+  margin-top: 10rpx;
+}
+
+/* 单个简易名片横条 */
+.member-mini-card {
+  display: flex;
+  align-items: center;
+  padding: 20rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.member-mini-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateX(5rpx);
+}
+
+.member-mini-card:active {
+  transform: scale(0.98) translateX(5rpx);
+}
+
+/* 简易名片头像容器 */
+.member-avatar-container {
+  position: relative;
+  margin-right: 20rpx;
+  flex-shrink: 0;
+}
+
+/* 简易名片头像 */
+.member-mini-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  border: 2rpx solid rgba(255, 255, 255, 0.2);
+}
+
+/* 社群成员"碰"提示 */
+.member-tap-hint {
+  position: absolute;
+  top: -6rpx;
+  right: -6rpx;
+  background: transparent;
+  border: 2rpx solid;
+  border-radius: 16rpx;
+  padding: 3rpx 6rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: member-tap-bounce 2.5s infinite ease-in-out;
+  z-index: 5;
+  /* 添加发光效果 */
+  box-shadow: 0 0 6rpx currentColor, 0 0 12rpx currentColor;
+  filter: drop-shadow(0 0 4rpx currentColor);
+}
+
+.member-tap-text {
+  font-size: 16rpx;
+  font-weight: bold;
+}
+
+@keyframes member-tap-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 6rpx currentColor, 0 0 12rpx currentColor;
+  }
+  50% {
+    transform: translateY(-3rpx) scale(1.05);
+    box-shadow: 0 0 10rpx currentColor, 0 0 20rpx currentColor, 0 0 30rpx currentColor;
+  }
+}
+
+/* 简易名片信息区 */
+.member-mini-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0; /* 允许内容收缩 */
+}
+
+.member-mini-name {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 4rpx;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-mini-status {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 简易名片箭头 */
+.member-mini-arrow {
+  font-size: 30rpx;
+  color: rgba(255, 255, 255, 0.4);
+  margin-left: 10rpx;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.member-mini-card:hover .member-mini-arrow {
+  color: rgba(255, 255, 255, 0.8);
+  transform: translateX(5rpx);
+}
+
+/* ============ 详细名片弹窗样式 ============ */
+
+/* 详细名片弹窗遮罩 */
+.detailed-card-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* 详细名片遮罩点击区域 */
+.detailed-card-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+}
+
+/* 详细名片内容容器 */
+.detailed-card-content {
+  position: relative;
+  z-index: 2;
+  background: linear-gradient(145deg, #1a1a1a, #0d0d0d);
+  border-radius: 24rpx;
+  box-shadow: 0 12rpx 48rpx rgba(0, 0, 0, 0.4);
+  width: 85vw;
+  max-width: 550rpx;
+  max-height: 80vh;
+  overflow: hidden;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50rpx) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 详细名片关闭按钮 */
+.detailed-card-close {
+  position: absolute;
+  top: 20rpx;
+  right: 30rpx;
+  font-size: 50rpx;
+  color: rgba(255, 255, 255, 0.6);
+  z-index: 10;
+  font-weight: normal;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.detailed-card-close:hover {
+  color: #ff6b6b;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 详细名片头部 */
+.detailed-card-header {
+  display: flex;
+  align-items: center;
+  padding: 50rpx 40rpx 30rpx 40rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+/* 详细名片头像容器 */
+.detailed-card-avatar-container {
+  position: relative;
+  margin-right: 30rpx;
+}
+
+.detailed-card-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  border: 3rpx solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 详细名片"碰"提示 */
+.detailed-card-tap-hint {
+  position: absolute;
+  top: -10rpx;
+  right: -10rpx;
+  background: transparent;
+  border: 2rpx solid;
+  border-radius: 22rpx;
+  padding: 6rpx 10rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: detailed-tap-bounce 2.2s infinite ease-in-out;
+  z-index: 15;
+  /* 添加发光效果 */
+  box-shadow: 0 0 10rpx currentColor, 0 0 20rpx currentColor;
+  filter: drop-shadow(0 0 8rpx currentColor);
+}
+
+.detailed-tap-text {
+  font-size: 20rpx;
+  font-weight: bold;
+}
+
+@keyframes detailed-tap-bounce {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 10rpx currentColor, 0 0 20rpx currentColor;
+  }
+  50% {
+    transform: translateY(-5rpx) scale(1.08);
+    box-shadow: 0 0 15rpx currentColor, 0 0 30rpx currentColor, 0 0 45rpx currentColor;
+  }
+}
+
+.detailed-card-info {
+  flex: 1;
+}
+
+.detailed-card-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #ffffff;
+  margin-bottom: 8rpx;
+}
+
+.detailed-card-status {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8rpx;
+}
+
+.detailed-card-theme {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* 详细名片分割线 */
+.detailed-card-divider {
+  height: 1rpx;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  margin: 0;
+}
+
+/* 详细名片滚动区域 */
+.detailed-card-body-scroll {
+  max-height: 50vh;
+  overflow-y: auto;
+  background: linear-gradient(rgba(26, 26, 26, 1) 0%, rgba(13, 13, 13, 0.95) 100%);
+}
+
+.detailed-card-body-scroll::-webkit-scrollbar {
+  width: 4rpx;
+}
+
+.detailed-card-body-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2rpx;
+}
+
+.detailed-card-body-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2rpx;
+}
+
+.detailed-card-body-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* 详细名片内容 */
+.detailed-card-body {
+  padding: 40rpx;
+}
+
+.card-section {
+  margin-bottom: 40rpx;
+}
+
+.card-section:last-child {
+  margin-bottom: 0;
+}
+
+.card-intro-text {
+  font-size: 28rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  text-align: left;
+}
+
+/* 标签网格 */
+.card-tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 15rpx;
+}
+
+.card-tag-item {
+  padding: 8rpx 16rpx;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20rpx;
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+/* AI匹配理由卡片 */
+.match-reason-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  padding: 30rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+  margin-top: 15rpx;
+  min-height: 120rpx;
+}
+
+.match-reason-content {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.6;
+  text-align: left;
+}
+
+.match-reason-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 8rpx;
+  margin-bottom: 16rpx;
+}
+
+.loading-dots .dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  animation: loading-pulse 1.4s infinite ease-in-out;
+}
+
+.loading-dots .dot:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots .dot:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots .dot:nth-child(3) {
+  animation-delay: 0s;
+}
+
+@keyframes loading-pulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.match-reason-loading text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.match-reason-placeholder {
+  font-size: 26rpx;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  padding: 20rpx 0;
+  font-style: italic;
+}
+
+/* 操作按钮 */
+.card-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 40rpx;
+  padding-top: 30rpx;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.action-btn {
+  flex: 1;
+  padding: 24rpx 0;
+  border-radius: 12rpx;
+  text-align: center;
+  font-size: 28rpx;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.action-btn.primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #ffffff;
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.action-btn.primary:hover {
+  background: linear-gradient(135deg, #5a6fd8, #6a42a0);
+  transform: translateY(-2rpx);
+  box-shadow: 0 8rpx 24rpx rgba(102, 126, 234, 0.3);
+}
+
+.action-btn.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+
+.action-btn.secondary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  transform: translateY(-2rpx);
 }

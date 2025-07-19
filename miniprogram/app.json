@@ -2,20 +2,8 @@
   "pages": [
     "pages/index/index",
     "pages/connect/connect",
-    "pages/device/device",
-    "pages/enterprise/enterprise",
     "pages/briefing/briefing",
-    "pages/aiReport/aiReport",
-    "pages/connectionMap/connectionMap",
-    "pages/fuzzySearch/fuzzySearch",
-    "pages/admin/admin",
-    "pages/achievements/achievements",
-    "pages/socialNetwork/socialNetwork",
-    "pages/keyGuestInfluence/keyGuestInfluence",
-    "pages/participantProfiles/participantProfiles",
-    "pages/userManagement/userManagement",
-    "pages/industryTrends/industryTrends",
-    "pages/preciseMarketing/preciseMarketing"
+    "pages/device/device"
   ],
 
   
@@ -35,20 +23,16 @@
     "backgroundColor": "#000000",
     "list": [
       {
-        "pagePath": "pages/device/device",
-        "text": "设备"
-      },
-      {
         "pagePath": "pages/connect/connect",
         "text": "连接"
       },
       {
-        "pagePath": "pages/index/index",
-        "text": "主页"
+        "pagePath": "pages/device/device",
+        "text": "设备"
       },
       {
-        "pagePath": "pages/briefing/briefing",
-        "text": "报告"
+        "pagePath": "pages/index/index",
+        "text": "主页"
       }
     ]
   },

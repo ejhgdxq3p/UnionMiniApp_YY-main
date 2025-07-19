@@ -1,5 +1,7 @@
 <!--connect.wxml-->
-<view class="container" style="{{cards[currentTrackIndex].avatarUrl ? 'background-image: url('+cards[currentTrackIndex].avatarUrl+');' : ''}}">
+<view class="container">
+  <!-- 主题背景图片 -->
+  <view class="theme-background" wx:if="{{cards[currentTrackIndex].avatarUrl}}" style="background-image: url({{cards[currentTrackIndex].avatarUrl}});"></view>
   <!-- 背景虚化层 -->
   <view class="background-blur"></view>
   
@@ -18,47 +20,40 @@
     <view class="header-area">
       <image class="union-logo" src="/images/uinon logo4.png" mode="aspectFit" bindtap="goToFuzzySearch"></image>
       <view class="search-bar" bindtap="goToFuzzySearch">
-        <view class="search-text">找到他：输入心动瞬间</view>
+        <view class="search-text">{{texts.searchPlaceholder}}</view>
       </view>
-      <view class="search-hint" bindtap="goToFuzzySearch">他说他骑过川藏线，曾经当过宿舍泡面经销商</view>
+      <view class="search-hint" bindtap="goToFuzzySearch">{{texts.searchHint}}</view>
     </view>
     
-    <!-- 唱片封面区域 - 下移位置 -->
-    <view class="vinyl-record" bindtap="goToAchievements">
-      <view class="vinyl-disc" style="transform: rotate({{discRotation}}deg)">
-        <!-- 添加唱片遮罩，使头像成为环形 -->
-        <view class="avatar-mask">
-          <image class="vinyl-hole-avatar" 
-               src="{{cards[currentTrackIndex].avatarUrl || '/assets/default-avatar.png'}}" 
-               mode="aspectFill"></image>
-        </view>
-        <!-- 唱片中心挖洞 -->
-        <view class="vinyl-hole"></view>
+    <!-- 发光环区域 -->
+    <view class="glow-orb-container" bindtap="viewTrackDetail" data-index="{{currentTrackIndex}}">
+      <view class="glow-orb" style="color: {{currentThemeColor}};">
+        <view class="orb-inner-glow"></view>
       </view>
     </view>
     
-    <!-- 歌单式名片列表 - 下移位置 -->
+    <!-- 主题列表 -->
     <scroll-view class="music-playlist" scroll-y="{{false}}" bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd">
       <!-- 加载中提示 -->
       <view class="loading-container" wx:if="{{isLoading}}">
         <view class="loading-icon"></view>
-        <text class="loading-text">加载中...</text>
+        <text class="loading-text">{{texts.loadingText}}</text>
       </view>
       
       <!-- 错误提示 -->
       <view class="error-container" wx:elif="{{loadError}}">
         <text class="error-text">{{loadError}}</text>
-        <view class="retry-btn" bindtap="getInteractionCards">重试</view>
+        <view class="retry-btn" bindtap="initThemeCards">{{texts.retryButton}}</view>
       </view>
       
       <!-- 空状态提示 -->
       <view class="empty-container" wx:elif="{{cards.length === 0}}">
         <view class="empty-icon">🎵</view>
-        <text class="empty-text">暂无社交歌单</text>
-        <text class="empty-subtext">与他人互动后，歌单将显示在这里</text>
+        <text class="empty-text">{{texts.emptyText}}</text>
+        <text class="empty-subtext">{{texts.emptySubtext}}</text>
       </view>
       
-      <!-- 歌单列表 -->
+      <!-- 主题列表 -->
       <view class="playlist-container" wx:else>
         <!-- 顶部填充 -->
         <view class="list-padding"></view>
@@ -73,22 +68,22 @@
                 bindtap="viewTrackDetail">
             <!-- 大型专辑封面式头像 -->
             <view class="album-cover-container">
-              <view class="album-cover-placeholder" wx:if="{{!item.avatarUrl}}">
+              <view class="album-cover-placeholder" wx:if="{{!item.avatarUrl}}" style="background-color: {{item.color || '#6366f1'}}">
                 <text>{{item.name ? item.name[0] : '?'}}</text>
               </view>
               <image class="album-cover" wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" mode="aspectFill"></image>
             </view>
             
             <view class="track-info">
-              <view class="track-title">{{item.name || '未知名称'}}</view>
-              <view class="track-artist">{{item.company || item.organization || '未知组织'}}</view>
+              <view class="track-title">{{item.name || texts.unknownTheme}}</view>
+              <view class="track-artist">{{item.subtitle || item.theme || texts.unknownTheme}}</view>
               
-              <!-- 技能标签作为歌曲风格标签 -->
-              <view class="track-tags" wx:if="{{item.skills && item.skills.length > 0}}">
-                <view class="tag" wx:for="{{item.skills}}" wx:for-item="skill" wx:key="*this" wx:if="{{index < 2}}">
-                  {{skill}}
+              <!-- 主题特色作为标签 -->
+              <view class="track-tags" wx:if="{{item.details && item.details.features && item.details.features.length > 0}}">
+                <view class="tag" wx:for="{{item.details.features}}" wx:for-item="feature" wx:key="*this" wx:if="{{index < 2}}">
+                  {{feature}}
                 </view>
-                <view class="tag-more" wx:if="{{item.skills.length > 2}}">+{{item.skills.length - 2}}</view>
+                <view class="tag-more" wx:if="{{item.details.features.length > 2}}">+{{item.details.features.length - 2}}</view>
               </view>
             </view>
           </view>
@@ -98,42 +93,177 @@
         <view class="list-padding"></view>
       </view>
     </scroll-view>
+
+    <!-- 配对用户展示区 -->
+    <view class="pair-section" wx:if="{{myPairs.length > 0}}">
+      <view class="pair-title">{{texts.pairingTitle}}</view>
+      <view class="pair-list">
+        <block wx:for="{{myPairs}}" wx:key="_openid">
+          <view class="pair-user" bindtap="showPairModal" data-openid="{{item._openid}}">
+            <view class="pair-user-container">
+              <image class="pair-avatar" src="{{item.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill"></image>
+              <view class="pair-tap-hint" style="border-color: {{currentThemeColor}}; color: {{currentThemeColor}};">
+                <text class="tap-text">{{texts.tapHint}}</text>
+              </view>
+            </view>
+            <view class="pair-nickname">{{item.nickName || texts.unknownUser}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+
+    <!-- 配对理由弹窗 -->
+    <view class="pair-modal" wx:if="{{showPairModal}}">
+      <view class="pair-modal-mask" bindtap="closePairModal"></view>
+      <view class="pair-modal-content">
+        <view class="pair-modal-close" bindtap="closePairModal">×</view>
+        <view class="pair-modal-header">
+          <image class="pair-modal-avatar" src="{{pairModalUser.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill"></image>
+          <view class="pair-modal-nickname">{{pairModalUser.nickName || texts.unknownUser}}</view>
+        </view>
+        <view class="pair-modal-reason-title">{{texts.modalTitle}}</view>
+        <view class="pair-modal-reason">{{pairModalContent}}</view>
+      </view>
+    </view>
   </view>
   
-  <!-- 名片预览弹窗 -->
+  <!-- 社群成员预览弹窗 -->
   <view class="card-preview-modal" wx:if="{{showCardPreview}}">
     <view class="card-preview-content">
       <view class="card-preview-close" bindtap="closeCardPreview">×</view>
       <view class="business-card">
+        <!-- 固定头部区域 -->
         <view class="card-header">
           <image class="card-avatar" src="{{selectedCard.avatarUrl || '/assets/default-avatar.png'}}"></image>
           <view class="card-basic-info">
-            <view class="card-name">{{selectedCard.name || '未填写姓名'}}</view>
-            <view class="card-position">{{selectedCard.position || '未填写职位'}}</view>
-            <view class="card-organization">{{selectedCard.organization || selectedCard.company || '未填写组织'}}</view>
+            <view class="card-name">{{selectedCard.name || texts.unknownTheme}}</view>
+                          <view class="card-position">{{selectedCard.communityName || texts.unknownCommunity}}</view>
+                          <view class="card-organization">{{texts.memberCount ? texts.memberCount.replace('{total}', selectedCard.totalMembers || 0).replace('{other}', selectedCard.otherMembersCount || 0) : '共' + (selectedCard.totalMembers || 0) + '人，其他成员' + (selectedCard.otherMembersCount || 0) + '人'}}</view>
           </view>
         </view>
         <view class="card-divider"></view>
-        <view class="card-body">
-          <view class="card-intro">{{selectedCard.introduction || '未填写个人介绍'}}</view>
-          <view class="card-skills" wx:if="{{selectedCard.skills && selectedCard.skills.length > 0}}">
-            <view class="card-section-title">技能</view>
-            <view class="card-tags">
-              <view class="card-tag" wx:for="{{selectedCard.skills}}" wx:key="index">{{item}}</view>
+        
+        <!-- 可滚动的内容区域 -->
+        <scroll-view class="card-body-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+          <view class="card-body">
+            <view class="card-intro">{{selectedCard.communityDescription || texts.noDescription}}</view>
+            
+            <!-- 社群成员简易名片列表 -->
+            <view class="card-members" wx:if="{{selectedCard.pairedUsers && selectedCard.pairedUsers.length > 0}}">
+              <view class="card-section-title">{{texts.sectionTitle}}</view>
+              <view class="member-cards-list">
+                <view 
+                  wx:for="{{selectedCard.pairedUsers}}" 
+                  wx:key="openid"
+                  class="member-mini-card"
+                  bindtap="showDetailedCard"
+                  data-member-index="{{index}}">
+                  <view class="member-avatar-container">
+                    <image class="member-mini-avatar" src="{{item.userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill"></image>
+                    <view class="member-tap-hint" style="border-color: {{currentThemeColor}}; color: {{currentThemeColor}};">
+                      <text class="member-tap-text">碰</text>
+                    </view>
+                  </view>
+                  <view class="member-mini-info">
+                    <view class="member-mini-name">{{item.userInfo.nickName || texts.unknownUser}}</view>
+                    <view class="member-mini-status">{{texts.memberStatus}}</view>
+                  </view>
+                  <view class="member-mini-arrow">></view>
+                </view>
+              </view>
+              <!-- 滚动提示 -->
+              <view class="scroll-hint" wx:if="{{selectedCard.pairedUsers.length > 4}}">
+                <text class="scroll-hint-text">{{texts.scrollHint}}</text>
+              </view>
+            </view>
+
+            <!-- 社群特征标签 -->
+            <view class="card-skills" wx:if="{{selectedCard.details && selectedCard.details.features && selectedCard.details.features.length > 0}}">
+              <view class="card-section-title">{{texts.featuresTitle}}</view>
+              <view class="card-tags">
+                <view class="card-tag" wx:for="{{selectedCard.details.features}}" wx:key="index">{{item}}</view>
+              </view>
             </view>
           </view>
-          <view class="card-fields" wx:if="{{selectedCard.fields && selectedCard.fields.length > 0}}">
-            <view class="card-section-title">领域</view>
-            <view class="card-tags">
-              <view class="card-tag" wx:for="{{selectedCard.fields}}" wx:key="index">{{item}}</view>
-            </view>
-          </view>
-          <view class="card-contact" wx:if="{{selectedCard.contact}}">
-            <view class="card-section-title">联系方式</view>
-            <view class="card-contact-value">{{selectedCard.contact}}</view>
+        </scroll-view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 详细名片弹窗 -->
+  <view class="detailed-card-modal" wx:if="{{showDetailedCard}}">
+    <view class="detailed-card-mask" bindtap="closeDetailedCard"></view>
+    <view class="detailed-card-content">
+      <view class="detailed-card-close" bindtap="closeDetailedCard">×</view>
+      
+      <!-- 详细名片头部 -->
+      <view class="detailed-card-header">
+        <view class="detailed-card-avatar-container">
+          <image class="detailed-card-avatar" src="{{selectedMember.userInfo.avatarUrl || '/assets/default-avatar.png'}}" mode="aspectFill"></image>
+          <view class="detailed-card-tap-hint" style="border-color: {{currentThemeColor}}; color: {{currentThemeColor}};">
+            <text class="detailed-tap-text">碰</text>
           </view>
         </view>
+        <view class="detailed-card-info">
+          <view class="detailed-card-name">{{selectedMember.userInfo.nickName || texts.unknownUser}}</view>
+          <view class="detailed-card-status">{{texts.memberStatus}}</view>
+          <view class="detailed-card-theme">{{selectedCard.name || texts.unknownTheme}} · {{selectedCard.communityName || texts.unknownCommunity}}</view>
+        </view>
       </view>
+      
+      <view class="detailed-card-divider"></view>
+      
+      <!-- 详细名片内容 -->
+      <scroll-view class="detailed-card-body-scroll" scroll-y="{{true}}" enhanced="{{true}}" show-scrollbar="{{false}}">
+        <view class="detailed-card-body">
+          <!-- 个人简介 -->
+          <view class="card-section">
+            <view class="card-section-title">个人简介</view>
+            <view class="card-intro-text">这是一位{{selectedCard.communityName || '神秘社群'}}的活跃成员，与你在{{selectedCard.name || '相同主题'}}下相遇。</view>
+          </view>
+          
+          <!-- 共同标签 -->
+          <view class="card-section" wx:if="{{selectedCard.details && selectedCard.details.features && selectedCard.details.features.length > 0}}">
+            <view class="card-section-title">共同标签</view>
+            <view class="card-tags-grid">
+              <view class="card-tag-item" wx:for="{{selectedCard.details.features}}" wx:key="index" wx:if="{{index < 6}}">
+                {{item}}
+              </view>
+            </view>
+          </view>
+          
+          <!-- AI匹配理由 -->
+          <view class="card-section">
+            <view class="card-section-title">AI匹配理由</view>
+            <view class="match-reason-card">
+              <view class="match-reason-content" wx:if="{{selectedMember.matchReason}}">
+                {{selectedMember.matchReason}}
+              </view>
+              <view class="match-reason-loading" wx:elif="{{selectedMember.isGeneratingReason}}">
+                <view class="loading-dots">
+                  <view class="dot"></view>
+                  <view class="dot"></view>
+                  <view class="dot"></view>
+                </view>
+                <text>AI正在分析你们的匹配度...</text>
+              </view>
+              <view class="match-reason-placeholder" wx:else>
+                AI正在为你们量身定制匹配理由...
+              </view>
+            </view>
+          </view>
+          
+          <!-- 操作按钮 -->
+          <view class="card-actions">
+            <view class="action-btn primary" bindtap="sendMessage" data-openid="{{selectedMember.openid}}">
+              <text>发送消息</text>
+            </view>
+            <view class="action-btn secondary" bindtap="viewCommunity">
+              <text>查看社群</text>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
   </view>
 </view> 

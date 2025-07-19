@@ -26,15 +26,28 @@
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  position: relative;
+  margin: 10rpx 8rpx;
+  border-radius: 12rpx;
+  transition: all 0.3s ease;
+  transform: scale(1);
+}
+
+.tab-bar-item.selected {
+  border: 2rpx solid transparent;
+  background: linear-gradient(#000000, #000000) padding-box, 
+              linear-gradient(135deg, #00d4ff, #7b68ee) border-box;
+  transform: scale(1.12);
 }
 
 .tab-bar-item-text {
   font-size: 24rpx;
   color: #8a8a8a;
-  transition: color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .tab-bar-item-text.selected {
   color: #ffffff;
   font-weight: bold;
+  font-size: 26rpx;
 } 
