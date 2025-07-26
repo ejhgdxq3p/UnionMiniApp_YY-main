@@ -1106,3 +1106,146 @@ page {
   font-size: 22rpx;
   padding: 8rpx 16rpx;
 }
+
+/* 第3步：单选标签模式 */
+.all-tags-section {
+  margin-top: 20rpx;
+}
+
+.all-tags-section .category-note {
+  text-align: center;
+  font-style: italic;
+  color: #aaa;
+  margin-bottom: 20rpx;
+  font-size: 26rpx;
+}
+
+.all-tags-section .tags-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200rpx, 1fr));
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.all-tags-section .tag-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #fff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.all-tags-section .tag-btn:active {
+  transform: scale(0.95);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+.all-tags-section .tag-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(102, 126, 234, 0.3);
+}
+
+.all-tags-section .tag-btn.active::before {
+  content: '✓';
+  position: absolute;
+  top: 8rpx;
+  right: 8rpx;
+  font-size: 20rpx;
+  font-weight: bold;
+  color: #fff;
+}
+
+/* 响应式调整 */
+@media (max-width: 750rpx) {
+  .all-tags-section .tags-grid {
+    grid-template-columns: repeat(auto-fill, minmax(180rpx, 1fr));
+    gap: 12rpx;
+  }
+  
+  .all-tags-section .tag-btn {
+    padding: 14rpx 16rpx;
+    font-size: 24rpx;
+  }
+}
+
+/* 第3步：三个模块分开显示 */
+.personality-modules {
+  margin-top: 20rpx;
+}
+
+.module-section {
+  margin-bottom: 40rpx;
+  padding: 20rpx;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  border: 1rpx solid rgba(255, 255, 255, 0.1);
+}
+
+.module-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12rpx;
+  text-align: center;
+}
+
+.module-note {
+  text-align: center;
+  font-style: italic;
+  color: #aaa;
+  margin-bottom: 20rpx;
+  font-size: 26rpx;
+}
+
+.module-section .tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 20rpx;
+}
+
+.module-section .tag-btn {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1rpx solid rgba(255, 255, 255, 0.2);
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #fff;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  line-height: 1.4;
+  min-width: 80rpx;
+  flex: 0 0 auto;
+}
+
+.module-section .tag-btn:active {
+  transform: scale(0.95);
+}
+
+.module-section .tag-btn.active {
+  font-weight: bold;
+  border: 2rpx solid transparent;
+  background: linear-gradient(#000, #000) padding-box, 
+              linear-gradient(135deg, #00d4ff, #7b68ee) border-box;
+  color: #fff;
+}
+
+
+
+/* 响应式调整 */
+@media (max-width: 750rpx) {
+  .module-section .tags-grid {
+    gap: 12rpx;
+  }
+}

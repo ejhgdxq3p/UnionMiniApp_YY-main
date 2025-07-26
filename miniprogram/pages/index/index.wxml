@@ -67,7 +67,7 @@
 
           <!-- 性格特征标签 -->
           <view wx:if="{{advancedTags.personalityTags.length > 0}}" class="tag-group">
-            <view class="tag-group-title">🧠 性格特征</view>
+            <view class="tag-group-title">🧠 MBTI性格</view>
             <view class="tag-group-content">
               <view wx:for="{{advancedTags.personalityTags}}" wx:key="*this" class="display-tag personality-tag">
                 {{item}}
@@ -77,7 +77,7 @@
 
           <!-- 特质标签 -->
           <view wx:if="{{advancedTags.quirkyTags.length > 0}}" class="tag-group">
-            <view class="tag-group-title">✨ 特质标签</view>
+            <view class="tag-group-title">✨ 性格关键词 / 星座 / 彩蛋</view>
             <view class="tag-group-content">
               <view wx:for="{{advancedTags.quirkyTags}}" wx:key="*this" class="display-tag quirky-tag">
                 {{item}}
@@ -255,7 +255,7 @@
             </view>
           </view>
 
-          <!-- 第3步：性格特征标签 -->
+          <!-- 第3步：MBTI性格标签 -->
           <view wx:if="{{currentStep === 3 && currentStepConfig}}" class="step-content">
             <view class="step-header">
               <view class="step-title">{{currentStepConfig.title}}</view>
@@ -290,7 +290,7 @@
               <view class="tags-grid">
                 <block wx:for="{{tagOptions.personality}}" wx:key="name" wx:for-item="tagOption">
                   <view wx:if="{{tagOption.category === currentCategory[3]}}" 
-                        class="tag-btn {{currentCategory[3] === '星座' ? 'zodiac-tag' : ''}} {{tagOption.active ? 'active' : ''}}" 
+                        class="tag-btn {{tagOption.active ? 'active' : ''}}" 
                         data-value="{{tagOption.name}}" 
                         bindtap="onPersonalityTagToggle">
                     {{tagOption.name}}
@@ -300,58 +300,8 @@
             </view>
           </view>
 
-          <!-- 第4步：特质标签 -->
+          <!-- 第4步：个人信息设置 -->
           <view wx:if="{{currentStep === 4 && currentStepConfig}}" class="step-content">
-            <view class="step-header">
-              <view class="step-title">{{currentStepConfig.title}}</view>
-              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
-              <view class="step-description">{{currentStepConfig.description}}</view>
-            </view>
-            
-            <!-- 分类选择区域 -->
-            <view class="category-selector">
-              <view class="category-tabs">
-                <view wx:for="{{currentStepConfig.categories}}" 
-                      wx:key="name" 
-                      wx:for-item="category"
-                      class="category-tab {{currentCategory[4] === category.name ? 'active' : ''}}"
-                      data-category="{{category.name}}"
-                      bindtap="onCategorySelect">
-                  {{category.name}}
-                </view>
-              </view>
-            </view>
-            
-            <!-- 当前分类下的标签 -->
-            <view class="current-category-tags">
-              <view class="category-title">{{currentCategory[4]}}</view>
-              <view wx:for="{{currentStepConfig.categories}}" 
-                    wx:key="name" 
-                    wx:for-item="category"
-                    wx:if="{{category.name === currentCategory[4] && category.note}}"
-                    class="category-note">
-                {{category.note}}
-              </view>
-              <view class="tags-grid">
-                <block wx:for="{{tagOptions.quirky}}" wx:key="name" wx:for-item="tagOption">
-                  <view wx:if="{{tagOption.category === currentCategory[4]}}" 
-                        class="tag-btn quirky-tag {{tagOption.active ? 'active' : ''}}" 
-                        data-value="{{tagOption.name}}" 
-                        bindtap="onQuirkyTagToggle">
-                    {{tagOption.name}}
-                  </view>
-                </block>
-              </view>
-            </view>
-          </view>
-
-          <!-- 编码测试按钮（开发环境） -->
-          <view wx:if="{{currentStep === 1}}" class="debug-section">
-            <button class="test-btn" bindtap="testEncoding" type="primary" size="mini">测试编码功能</button>
-          </view>
-
-          <!-- 第5步：个人信息设置 -->
-          <view wx:if="{{currentStep === 5 && currentStepConfig}}" class="step-content">
             <view class="step-header">
               <view class="step-title">{{currentStepConfig.title}}</view>
               <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
@@ -405,27 +355,6 @@
                           maxlength="200"></textarea>
               </view>
 
-              <!-- 照片上传 -->
-              <view class="form-item">
-                <view class="form-label">脸盲友好行为🤝</view>
-                <view class="photos-section">
-                  <view class="photos-grid">
-                    <block wx:for="{{advancedTags.photos}}" wx:key="*this" wx:for-index="idx">
-                      <view class="photo-item">
-                        <image src="{{item}}" mode="aspectFill"></image>
-                        <view class="delete-photo" data-index="{{idx}}" bindtap="deletePhoto">×</view>
-                      </view>
-                    </block>
-                    
-                    <view wx:if="{{advancedTags.photos.length < 3}}" class="add-photo" bindtap="uploadPhotos">
-                      <view class="add-icon">+</view>
-                      <view class="add-text">添加照片</view>
-                    </view>
-                  </view>
-                  <view class="photos-hint">选择性地上传自己的照片（最多3张）</view>
-                </view>
-              </view>
-
               <!-- 闪光阈值信息 -->
               <view class="form-item">
                 <view class="form-label">🔥 闪光阈值</view>
@@ -436,6 +365,56 @@
                   </view>
                   <view class="threshold-hint">系统默认设置，可在提交后调整</view>
                 </view>
+              </view>
+            </view>
+          </view>
+
+          <!-- 编码测试按钮（开发环境） -->
+          <view wx:if="{{currentStep === 1}}" class="debug-section">
+            <button class="test-btn" bindtap="testEncoding" type="primary" size="mini">测试编码功能</button>
+          </view>
+
+          <!-- 第5步：性格关键词 / 星座 / 彩蛋标签 -->
+          <view wx:if="{{currentStep === 5 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <!-- 分类选择区域 -->
+            <view class="category-selector">
+              <view class="category-tabs">
+                <view wx:for="{{currentStepConfig.categories}}" 
+                      wx:key="name" 
+                      wx:for-item="category"
+                      class="category-tab {{currentCategory[5] === category.name ? 'active' : ''}}"
+                      data-category="{{category.name}}"
+                      bindtap="onCategorySelect">
+                  {{category.name}}
+                </view>
+              </view>
+            </view>
+            
+            <!-- 当前分类下的标签 -->
+            <view class="current-category-tags">
+              <view class="category-title">{{currentCategory[5]}}</view>
+              <view wx:for="{{currentStepConfig.categories}}" 
+                    wx:key="name" 
+                    wx:for-item="category"
+                    wx:if="{{category.name === currentCategory[5] && category.note}}"
+                    class="category-note">
+                {{category.note}}
+              </view>
+              <view class="tags-grid">
+                <block wx:for="{{tagOptions.quirky}}" wx:key="name" wx:for-item="tagOption">
+                  <view wx:if="{{tagOption.category === currentCategory[5]}}" 
+                        class="tag-btn quirky-tag {{tagOption.active ? 'active' : ''}}" 
+                        data-value="{{tagOption.name}}" 
+                        bindtap="onQuirkyTagToggle">
+                    {{tagOption.name}}
+                  </view>
+                </block>
               </view>
             </view>
           </view>

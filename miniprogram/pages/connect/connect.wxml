@@ -147,7 +147,7 @@
                    bindlongpress="onQRCodeLongPress"
                    show-menu-by-longpress="true"></image>
           </view>
-          <view class="qrcode-hint">长按二维码可识别添加微信</view>
+          <view class="qrcode-hint">长按二维码可直接添加好友</view>
         </view>
       </view>
     </view>

@@ -62,7 +62,7 @@ Page({
       contactInfo: ''
     },
     currentStep: 1,
-    totalSteps: 5, // 更新为5步
+    totalSteps: 5, // 更新为5步（第4步是个人信息，第5步是彩蛋）
     // 使用新的标签系统
     useAdvancedTags: true, // 标识使用新的标签系统
     config: Config.advancedTagsConfig,
@@ -229,12 +229,14 @@ Page({
   initAdvancedTagsFromConfig() {
     const steps = Config.advancedTagsConfig.steps;
     
+    console.log('[initAdvancedTagsFromConfig] 步骤配置:', steps.map(s => ({ id: s.id, title: s.title })));
+    
     // 初始化各步骤的标签选项
     const tagOptions = {
       professional: this.initCategoryOptions(steps[0]), // 第1步：专业领域
       interest: this.initCategoryOptions(steps[1]), // 第2步：兴趣爱好
       personality: this.initCategoryOptions(steps[2]), // 第3步：性格
-      quirky: this.initCategoryOptions(steps[3]) // 第4步：彩蛋标签
+      quirky: this.initCategoryOptions(steps[4]) // 第5步：彩蛋标签（现在是第5步）
     };
     
     console.log('[initAdvancedTagsFromConfig] 初始化的标签选项:', {
@@ -244,6 +246,10 @@ Page({
       quirky: tagOptions.quirky.length
     });
     
+    // 检查第5步配置
+    console.log('[initAdvancedTagsFromConfig] 第5步配置:', steps[4]);
+    console.log('[initAdvancedTagsFromConfig] 第5步标签选项:', tagOptions.quirky);
+    
     // 初始化当前分类，为每步设置默认的第一个分类
     const currentCategory = {};
     steps.forEach((step, index) => {
@@ -251,6 +257,8 @@ Page({
         currentCategory[index + 1] = step.categories[0].name;
       }
     });
+    
+    console.log('[initAdvancedTagsFromConfig] 初始化的分类:', currentCategory);
     
     this.setData({
       tagOptions,
@@ -501,7 +509,7 @@ Page({
     });
   },
 
-  // 性格标签切换
+  // 性格标签切换（MBTI单选）
   onPersonalityTagToggle(e) {
     const value = e.currentTarget.dataset.value;
     let tags = [...this.data.advancedTags.personalityTags];
@@ -510,7 +518,8 @@ Page({
     if (index > -1) {
       tags.splice(index, 1);
     } else {
-      tags.push(value);
+      // 单选：清空之前的选择，只保留当前选择
+      tags = [value];
     }
     
     this.setData({
@@ -518,7 +527,7 @@ Page({
     }, () => {
       this.refreshAllTagsActive();
       this.saveAdvancedTags();
-                  });
+    });
   },
 
   // 彩蛋标签切换
@@ -724,8 +733,8 @@ Page({
     
     if (!config) return true;
     
-    // 第1-4步：验证标签选择
-    if (step <= 4) {
+    // 第1-3步：验证标签选择
+    if (step <= 3) {
       const tagField = this.getTagFieldByStep(step);
       const selectedTags = this.data.advancedTags[tagField] || [];
       
@@ -738,7 +747,7 @@ Page({
         return false;
       }
       
-      // 第1-3步完成后检查总标签数量
+      // 第3步完成后检查总标签数量
       if (step === 3) {
         const totalTags = this.data.totalSelectedTags;
         if (totalTags < Config.advancedTagsConfig.meta.minTotalTags) {
@@ -751,8 +760,8 @@ Page({
       }
     }
     
-    // 第5步：验证必填信息
-    if (step === 5) {
+    // 第4步：验证必填信息
+    if (step === 4) {
       if (!this.data.advancedTags.displayName || this.data.advancedTags.displayName.trim() === '') {
         wx.showToast({
           title: '请填写称呼',
@@ -760,6 +769,11 @@ Page({
         });
         return false;
       }
+    }
+    
+    // 第5步：彩蛋标签（可选，不需要验证）
+    if (step === 5) {
+      return true;
     }
     
     return true;
@@ -771,19 +785,21 @@ Page({
       1: 'professionalTags',
       2: 'interestTags', 
       3: 'personalityTags',
-      4: 'quirkyTags'
+      5: 'quirkyTags' // 第5步是彩蛋标签，第4步是个人信息设置
     };
     return fieldMap[step];
   },
 
-  // 解码验证功能
+  // 解码验证功能（只验证前3页）
   verifyEncoding(encodedString) {
     try {
       const encoding = Config.advancedTagsConfig.encoding;
       const steps = Config.advancedTagsConfig.steps;
-      const allTagsList = encoding.getAllTagsList(steps);
+      // 只获取前3页的标签列表
+      const encodingSteps = steps.slice(0, 3);
+      const allTagsList = encoding.getAllTagsList(encodingSteps);
       
-      console.log('[verifyEncoding] 开始解码:', encodedString);
+      console.log('[verifyEncoding] 开始解码（前3页）:', encodedString);
       
       // 解码
       const decodedBinary = encoding.decode(encodedString);
@@ -797,7 +813,7 @@ Page({
         }
       });
       
-      console.log('[verifyEncoding] 解码得到的选中标签:', selectedTags);
+      console.log('[verifyEncoding] 解码得到的选中标签（前3页）:', selectedTags);
       
       return {
         success: true,
@@ -814,18 +830,19 @@ Page({
     }
   },
 
-  // 测试编码功能
+  // 测试编码功能（只测试前3页）
   testEncoding() {
-    console.log('=== 开始测试编码功能 ===');
+    console.log('=== 开始测试编码功能（前3页） ===');
     
     try {
       const encoding = Config.advancedTagsConfig.encoding;
       const steps = Config.advancedTagsConfig.steps;
       
-      // 获取所有标签列表
-      const allTagsList = encoding.getAllTagsList(steps);
-      console.log('所有标签列表:', allTagsList);
-      console.log('总标签数量:', allTagsList.length);
+      // 只获取前3页的标签列表
+      const encodingSteps = steps.slice(0, 3);
+      const allTagsList = encoding.getAllTagsList(encodingSteps);
+      console.log('前3页标签列表:', allTagsList);
+      console.log('前3页总标签数量:', allTagsList.length);
       
       // 创建测试数据：选中前10个标签
       const testBinaryArray = allTagsList.map((_, index) => index < 10);
@@ -861,13 +878,14 @@ Page({
         console.log('✅ 编码功能测试通过！');
         wx.showModal({
           title: '编码测试成功 ✅',
-          content: `📊 测试结果:\n` +
-                  `• 总标签数: ${allTagsList.length}\n` +
+          content: `📊 测试结果（前3页）:\n` +
+                  `• 前3页标签数: ${allTagsList.length}\n` +
                   `• 测试选中: 前10个标签\n` +
                   `• 编码长度: ${encoded.length}字符\n` +
                   `• 解码验证: ${verifyResult.selectedTags.length}个标签\n\n` +
                   `🔐 编码结果: ${encoded}\n\n` +
-                  `💡 编码/解码一致性验证通过！`,
+                  `💡 编码/解码一致性验证通过！\n` +
+                  `📝 注意：第5页彩蛋标签不参与编码`,
           showCancel: false
         });
       } else {
@@ -889,24 +907,24 @@ Page({
     console.log('=== 编码功能测试结束 ===');
   },
 
-  // 生成标签编码
+  // 生成标签编码（只对前3页进行编码）
   generateTagsEncoding() {
     const encoding = Config.advancedTagsConfig.encoding;
     const steps = Config.advancedTagsConfig.steps;
     
-    // 获取所有标签列表
-    const allTagsList = encoding.getAllTagsList(steps);
-    console.log('[generateTagsEncoding] 所有标签列表:', allTagsList);
+    // 只获取前3页的标签列表（专业领域、兴趣爱好、MBTI性格）
+    const encodingSteps = steps.slice(0, 3); // 只取前3步
+    const allTagsList = encoding.getAllTagsList(encodingSteps);
+    console.log('[generateTagsEncoding] 编码标签列表（前3页）:', allTagsList);
     
-    // 获取用户选择的所有标签
+    // 获取用户选择的前3页标签（不包括彩蛋标签）
     const userSelectedTags = [
       ...(this.data.advancedTags.professionalTags || []),
       ...(this.data.advancedTags.interestTags || []),
-      ...(this.data.advancedTags.personalityTags || []),
-      ...(this.data.advancedTags.quirkyTags || [])
+      ...(this.data.advancedTags.personalityTags || [])
     ];
     
-    console.log('[generateTagsEncoding] 用户选择的标签:', userSelectedTags);
+    console.log('[generateTagsEncoding] 用户选择的前3页标签:', userSelectedTags);
     
     // 创建二进制数组：每个标签对应一个位，选中为true，未选为false
     const binaryArray = allTagsList.map(tagInfo => 
@@ -1012,12 +1030,13 @@ Page({
           // 显示编码结果并切换到个人名片视图
           wx.showModal({
             title: '提交成功！🎉',
-            content: `📊 编码统计:\n` +
-                    `• 总标签数: ${tagEncoding.allTagsList.length}\n` +
+            content: `📊 编码统计（前3页）:\n` +
+                    `• 前3页标签数: ${tagEncoding.allTagsList.length}\n` +
                     `• 已选标签: ${tagEncoding.selectedTags.length}\n` +
                     `• 编码长度: ${tagEncoding.encoded.length} 字符\n\n` +
                     `🔐 你的标签编码:\n${tagEncoding.encoded}\n\n` +
-                    `💡 即将切换到个人名片视图！`,
+                    `💡 即将切换到个人名片视图！\n` +
+                    `📝 注意：第5页彩蛋标签不参与编码`,
             showCancel: false,
             confirmText: '查看名片',
             success: () => {
@@ -1332,337 +1351,14 @@ Page({
       this.setData({
         [`questionnaire.${field}`]: value
       });
-      
-      // 特殊处理：如果选择了非"其他"选项，清空相关的其他输入字段
-      if (field === 'profession' && value !== '其他') {
-        this.setData({
-          'questionnaire.professionOther': ''
-        });
-      }
-      if (field === 'contactWillingness' && value !== '愿意') {
-        this.setData({
-          'questionnaire.contactInfo': ''
-        });
-      }
-      
       this.saveQuestionnaire();
     }
-  },
-
-  // 输入事件处理 (兼容保留)
-  onNicknameInput(e) {
-    this.setData({
-      'questionnaire.nickname': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onCityChange(e) {
-    const region = e.detail.value;
-    // 只取省和市，忽略区
-    const city = [region[0], region[1]].join(' - ');
-    this.setData({
-      'questionnaire.region': region,
-      'questionnaire.city': city
-    });
-    this.saveQuestionnaire();
-  },
-
-  onProfessionOtherInput(e) {
-    this.setData({
-      'questionnaire.professionOther': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onInterestOtherInput(e) {
-    this.setData({
-      'questionnaire.interestOther': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onMbtiInput(e) {
-    this.setData({
-      'questionnaire.mbtiType': e.detail.value.toUpperCase()
-    });
-    this.saveQuestionnaire();
-  },
-
-  onMonthInput(e) {
-    this.setData({
-      'questionnaire.constellationDate.month': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onDayInput(e) {
-    this.setData({
-      'questionnaire.constellationDate.day': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  // 单选项选择
-  onAgeSelect(e) {
-    this.setData({
-      'questionnaire.ageGroup': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onGenderSelect(e) {
-    this.setData({
-      'questionnaire.gender': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onProfessionSelect(e) {
-    this.setData({
-      'questionnaire.profession': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onStatusSelect(e) {
-    this.setData({
-      'questionnaire.currentStatus': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onInteractionSelect(e) {
-    this.setData({
-      'questionnaire.interactionWillingness': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onConstellationSelect(e) {
-    this.setData({
-      'questionnaire.constellation': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onMbtiKnownSelect(e) {
-    this.setData({
-      'questionnaire.mbtiKnown': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onFirstDeviceSelect(e) {
-    this.setData({
-      'questionnaire.firstDevice': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onImportantDeviceSelect(e) {
-    this.setData({
-      'questionnaire.mostImportantDevice': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onAiAttitudeSelect(e) {
-    this.setData({
-      'questionnaire.aiAttitude': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onSmartDeviceSelect(e) {
-    this.setData({
-      'questionnaire.smartDeviceCount': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onImmersiveSelect(e) {
-    this.setData({
-      'questionnaire.immersivePreference': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onExhibitionSelect(e) {
-    this.setData({
-      'questionnaire.exhibitionPreference': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onLearningSelect(e) {
-    this.setData({
-      'questionnaire.learningPreference': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  onEnergyTimeSelect(e) {
-    this.setData({
-      'questionnaire.energyTime': e.currentTarget.dataset.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  // 第8步：联系方式意愿选择
-  onContactWillingnessSelect(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({
-      'questionnaire.contactWillingness': value
-    });
-    // 如果选择不愿意，清空联系方式
-    if (value !== '愿意') {
-      this.setData({
-        'questionnaire.contactInfo': ''
-      });
-    }
-    this.saveQuestionnaire();
-  },
-
-  // 联系方式输入
-  onContactInfoInput(e) {
-    this.setData({
-      'questionnaire.contactInfo': e.detail.value
-    });
-    this.saveQuestionnaire();
-  },
-
-  // 多选项处理
-  onInterestToggle(e) {
-    const value = e.currentTarget.dataset.value;
-    let tags = [...this.data.questionnaire.interestTags];
-    const index = tags.indexOf(value);
-    if (index > -1) {
-      tags.splice(index, 1);
-    } else {
-      tags.push(value);
-    }
-    this.setData({
-      'questionnaire.interestTags': tags
-    }, () => {
-      this.refreshOptionActive();
-    });
-    this.saveQuestionnaire();
-  },
-
-  onTechTrendToggle(e) {
-    const value = e.currentTarget.dataset.value;
-    let trends = [...this.data.questionnaire.techTrends];
-    const index = trends.indexOf(value);
-    if (index > -1) {
-      trends.splice(index, 1);
-    } else {
-      trends.push(value);
-    }
-    this.setData({
-      'questionnaire.techTrends': trends
-    }, () => {
-      this.refreshOptionActive();
-    });
-    this.saveQuestionnaire();
   },
 
   // 保存问卷数据
   saveQuestionnaire() {
     wx.setStorageSync('questionnaire', this.data.questionnaire);
     wx.setStorageSync('questionnaireUpdateTime', new Date().toISOString());
-  },
-
-  // 提交问卷
-  submitQuestionnaire() {
-    // 验证必填项
-    const required = ['nickname', 'ageGroup', 'city', 'profession'];
-    for (let field of required) {
-      if (!this.data.questionnaire[field]) {
-        wx.showToast({
-          title: this.data.texts.validateError,
-          icon: 'error'
-        });
-        return;
-      }
-    }
-
-    this.setData({ isSubmitting: true });
-
-    // 准备提交的数据
-    const questionnaireData = this.data.questionnaire;
-    const userInfo = { ...this.data.userInfo };
-
-    // 基于昵称生成DiceBear头像并更新userInfo
-    const nickname = questionnaireData.nickname || 'default';
-    userInfo.avatarUrl = `https://api.dicebear.com/7.x/bottts-neutral/svg?seed=${nickname}`;
-
-    // 更新本地存储，确保数据持久化
-    wx.setStorageSync('userInfo', userInfo);
-    // 更新页面数据
-    this.setData({
-      userInfo: userInfo
-    });
-
-    // 调用云函数提交数据
-    wx.cloud.callFunction({
-      name: 'submitQuestionnaire',
-      data: {
-        questionnaireData: questionnaireData,
-        userInfo: userInfo,
-        avatarFileID: this.data.uploadedAvatarFileID || this.data.userInfo.avatarFileID
-      },
-      success: (res) => {
-        console.log('[Index] 提交问卷成功', res);
-        
-        this.setData({ isSubmitting: false });
-        
-        if (res.result.success) {
-          // 更新本地存储的时间戳
-          wx.setStorageSync('questionnaireUpdateTime', new Date().toISOString());
-          
-          // 清空上传的头像文件ID（已保存到数据库）
-          this.setData({
-            uploadedAvatarFileID: null
-          });
-          
-          wx.showToast({
-            title: res.result.message,
-            icon: 'success'
-          });
-          
-          // 不清除本地数据，保持云端和本地同步
-          console.log('[Index] 问卷数据已同步到云端，本地数据保留');
-          
-          // 可以跳转到其他页面
-          setTimeout(() => {
-            wx.switchTab({ url: '/pages/connect/connect' });
-          }, 1500);
-        } else {
-          wx.showToast({
-            title: res.result.message,
-            icon: 'error'
-          });
-        }
-      },
-      fail: (err) => {
-        console.error('[Index] 提交问卷失败', err);
-        this.setData({ isSubmitting: false });
-        
-        wx.showToast({
-          title: '网络错误，请重试',
-          icon: 'error'
-        });
-      }
-    });
-  },
-
-  // MBTI测试
-  takeMbtiTest() {
-    wx.showToast({
-      title: 'MBTI测试功能开发中',
-      icon: 'none'
-    });
   },
 
   // 切换到个人名片视图
@@ -1695,9 +1391,9 @@ Page({
     this.updateTotalSelectedTags();
     
     // 确保在合适的步骤
-    if (this.data.currentStep === 5 && this.data.totalSelectedTags >= 4) {
-      // 如果在最后一步且已有足够标签，保持在第5步
-      console.log('[switchToQuestionnaireView] 保持在第5步进行信息编辑');
+    if (this.data.currentStep === 4 && this.data.totalSelectedTags >= 4) {
+      // 如果在第4步且已有足够标签，保持在第4步
+      console.log('[switchToQuestionnaireView] 保持在第4步进行信息编辑');
     } else if (this.data.totalSelectedTags < 4) {
       // 如果标签不足，回到第一步
       this.setData({

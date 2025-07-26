@@ -36,51 +36,29 @@
   z-index: -1;
 }
 
-.navbar {
-  width: 70%;  /* 更短小 */
-  height: 80rpx;
+/* 页面顶部导航栏 */
+.nav-bar {
   position: fixed;
-  bottom: 80rpx;  /* 更靠上 */
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  padding: 8rpx 20rpx;
-  border-radius: 60rpx;  /* 两头更圆 */
-  margin: 0 auto;
+  top: 0;
   left: 0;
   right: 0;
-  z-index: 999;
-  background-color: #4169E1; /* 使用群青色 */
-  color: white;
-  box-shadow: 0 4rpx 10rpx rgba(0, 0, 0, 0.2);
+  height: 88rpx;
+  background-color: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.navbar-item {
-  flex: 1;
-  text-align: center;
-  height: 70rpx;
-  line-height: 70rpx;
-  font-size: 28rpx;
-  position: relative;
-  transition: all 0.3s;
-  color: rgba(255, 255, 255, 0.8); /* 默认文本颜色为白色半透明 */
-}
-
-.navbar-item.active {
+.nav-title {
+  font-size: 36rpx;
   font-weight: bold;
-  color: white; /* 激活状态的文本颜色为纯白色 */
-}
-
-.navbar-item.active::after {
-  content: '';
-  position: absolute;
-  bottom: 5rpx;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 50rpx;
-  height: 5rpx;
-  background: white; /* 激活指示线为白色 */
-  border-radius: 3rpx;
+  color: #ffffff;
+  text-align: center;
 }
 
 .content {
@@ -90,7 +68,7 @@
   flex-direction: column;
   align-items: flex-start;
   position: relative;
-  padding-top: 0; /* 修改顶部内边距，为logo和检索框留出空间 */
+  padding-top: 88rpx; /* 为顶部导航栏留出空间 */
 }
 
 
