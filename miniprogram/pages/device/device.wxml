@@ -142,6 +142,7 @@
         <input class="message-input" placeholder="输入消息" value="{{input}}" bindinput="onInput" />
         <view class="button-group">
           <button class="action-button" bindtap="sendMsg" disabled="{{!connected}}">发送</button>
+          <button class="action-button mini" bindtap="checkAndSendUnString" wx:if="{{connected}}">发送Un</button>
           <button class="action-button mini" bindtap="subscribeAllNotifyCharacteristics" wx:if="{{connected}}">订阅所有</button>
           <button class="action-button mini" bindtap="forceSubscribeAll" wx:if="{{connected}}">强制订阅</button>
           <button class="action-button mini" bindtap="forceReconnect" wx:if="{{connected}}">重连</button>

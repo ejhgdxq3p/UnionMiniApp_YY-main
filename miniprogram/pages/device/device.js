@@ -295,46 +295,80 @@ Page({
       this._continuousScanTimer = null;
     }
     
-    // 检查并发送蓝牙名称给硬件
-    this.checkAndSendBluetoothName();
+    // 检查并发送16字节Un字符串给硬件
+    this.checkAndSendUnString();
   },
 
-  // 检查并发送蓝牙名称给硬件
-  async checkAndSendBluetoothName() {
+  // 检查并发送16字节Un字符串给硬件
+  async checkAndSendUnString() {
     try {
-      console.log('检查并发送蓝牙名称给硬件');
+      console.log('检查并发送16字节Un字符串给硬件');
       
       // 获取当前用户的编码标签
       const userEncodedTags = await this.getUserEncodedTags();
       if (!userEncodedTags) {
-        console.log('未找到用户编码标签，跳过蓝牙名称检查');
+        console.log('未找到用户编码标签，提示用户完善个人主页');
+        
+        // 显示弹窗提示用户先去完善个人主页
+        wx.showModal({
+          title: '需要完善个人主页',
+          content: '请先去完善个人主页，生成您的专属标识，否则无法使用硬件功能。',
+          showCancel: true,
+          cancelText: '稍后',
+          confirmText: '去完善',
+          success: (res) => {
+            if (res.confirm) {
+              // 跳转到个人主页
+              wx.navigateTo({
+                url: '/pages/index/index'
+              });
+            }
+          }
+        });
         return;
       }
       
-      // 生成16字符的蓝牙名称（取前16个字符）
-      const bluetoothName = userEncodedTags.substring(0, 16);
-      console.log('生成的蓝牙名称:', bluetoothName);
+      // 生成16字符的Un字符串（取前16个字符）
+      const unString = userEncodedTags.substring(0, 16);
+      console.log('生成的16字节Un字符串:', unString);
       
-      // 获取当前连接的设备信息
-      const deviceInfo = await this.getConnectedDeviceInfo();
-      if (!deviceInfo) {
-        console.log('无法获取设备信息，跳过蓝牙名称检查');
-        return;
-      }
+      // 构建发送给硬件的JSON命令
+      const command = {
+        type: 'set_un_string',
+        un_string: unString,
+        timestamp: Date.now()
+      };
       
-      console.log('当前设备名称:', deviceInfo.name);
-      console.log('应该设置的蓝牙名称:', bluetoothName);
+      const commandStr = JSON.stringify(command);
+      console.log('发送的JSON命令:', commandStr);
       
-      // 检查设备名称是否匹配
-      if (deviceInfo.name !== bluetoothName) {
-        console.log('设备名称不匹配，发送新的蓝牙名称给硬件');
-        await this.sendBluetoothNameToDevice(bluetoothName);
-      } else {
-        console.log('设备名称已匹配，无需更新');
-      }
+      // 记录发送的命令到消息列表
+      const sendMessage = `📤 发送16字节Un字符串: ${unString}`;
+      this.setData({ 
+        messages: this.data.messages.concat(sendMessage)
+      });
+      
+      // 发送给硬件
+      await this.writeToBle(commandStr);
+      
+      console.log('✅ 16字节Un字符串发送成功');
+      
+      // 显示成功提示
+      wx.showToast({
+        title: 'Un字符串已发送',
+        icon: 'success',
+        duration: 2000
+      });
       
     } catch (error) {
-      console.error('检查蓝牙名称失败:', error);
+      console.error('发送16字节Un字符串失败:', error);
+      
+      // 显示错误提示
+      wx.showToast({
+        title: '发送失败',
+        icon: 'error',
+        duration: 2000
+      });
     }
   },
 
@@ -358,72 +392,6 @@ Page({
     } catch (error) {
       console.error('获取用户编码标签失败:', error);
       return null;
-    }
-  },
-
-  // 获取当前连接的设备信息
-  async getConnectedDeviceInfo() {
-    try {
-      // 获取已连接的设备列表
-      const devices = await wx.getBluetoothDevices();
-      const connectedDevice = devices.devices.find(device => 
-        device.deviceId === this.data.deviceId
-      );
-      
-      return connectedDevice || null;
-    } catch (error) {
-      console.error('获取设备信息失败:', error);
-      return null;
-    }
-  },
-
-  // 发送蓝牙名称给硬件
-  async sendBluetoothNameToDevice(bluetoothName) {
-    try {
-      console.log('发送蓝牙名称给硬件:', bluetoothName);
-      
-      // 构建发送给硬件的命令
-      const command = {
-        type: 'set_bluetooth_name',
-        name: bluetoothName,
-        timestamp: Date.now()
-      };
-      
-      const commandStr = JSON.stringify(command);
-      console.log('发送的命令:', commandStr);
-      
-      // 记录发送的命令到消息列表
-      const sendMessage = `📤 发送蓝牙名称: ${bluetoothName}`;
-      this.setData({ 
-        messages: this.data.messages.concat(sendMessage)
-      });
-      
-      // 发送给硬件
-      await this.writeToBle(commandStr);
-      
-      // 显示成功提示
-      wx.showToast({
-        title: '蓝牙名称已发送',
-        icon: 'success',
-        duration: 2000
-      });
-      
-      console.log('蓝牙名称发送成功');
-      
-    } catch (error) {
-      console.error('发送蓝牙名称失败:', error);
-      
-      // 记录发送失败到消息列表
-      const failMessage = `❌ 蓝牙名称发送失败: ${bluetoothName}`;
-      this.setData({ 
-        messages: this.data.messages.concat(failMessage)
-      });
-      
-      wx.showToast({
-        title: '发送失败',
-        icon: 'none',
-        duration: 2000
-      });
     }
   },
 
