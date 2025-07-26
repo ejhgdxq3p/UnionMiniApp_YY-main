@@ -5,5 +5,5 @@
     "compileHotReLoad": true,
     "bigPackageSizeSupport": true
   },
-  "libVersion": "3.8.8"
+  "libVersion": "3.8.12"
 }

@@ -1,13 +1,5 @@
-<!--问卷调查页面-->
+<!--高级标签问卷调查页面-->
 <view class="container">
-  <!-- 企业版入口 - 已隐藏 -->
-  <!-- 
-  <view class="enterprise-corner" bindtap="navigateToEnterprise">
-    <view class="page-fold"></view>
-    <view class="corner-text">企业版</view>
-  </view>
-  -->
-
   <!-- 主内容区域 -->
   <view class="content">
     <!-- 未登录状态 -->
@@ -19,136 +11,467 @@
       </view>
     </block>
 
-    <!-- 已登录状态 - 问卷表单 -->
+    <!-- 已登录状态 -->
     <block wx:else>
-      <!-- 顶部用户信息 -->
-      <view class="user-header">
-        <view class="avatar-container" bindtap="uploadAvatar">
-          <image class="user-avatar" src="{{userInfo.customAvatar && userInfo.avatarUrl ? userInfo.avatarUrl : 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=' + (questionnaire.nickname || 'default')}}"></image>
-          <view class="avatar-upload-tip">{{texts.avatarUploadTip}}</view>
-        </view>
-        <view class="user-name">{{questionnaire.nickname || '微信用户'}}</view>
-      </view>
-
-      <!-- 进度条 -->
-      <view class="progress-bar">
-        <view class="progress" style="width: {{(currentStep / totalSteps) * 100}}%;"></view>
-      </view>
-      <view class="progress-text">{{TextConfig.getText('questionnaire.stepFormat', {current: currentStep, total: totalSteps})}}</view>
-
-      <!-- 问卷内容 -->
-      <form class="questionnaire-form">
-        <!-- 动态渲染当前步骤 -->
-        <view wx:if="{{currentStepConfig}}">
-          <view class="form-title">{{currentStep}}/{{totalSteps}}：{{currentStepConfig.title}}</view>
-          
-          <!-- 渲染当前步骤的所有问题 -->
-          <block wx:for="{{currentStepConfig.questions}}" wx:key="field" wx:for-item="question">
-          <view class="form-item">
-              <view class="form-label {{question.required ? 'required' : ''}}">{{question.label}}</view>
-              
-              <!-- 子标题/描述 -->
-              <view wx:if="{{question.inputDescription}}" class="sub-label">{{question.inputDescription}}</view>
-              
-              <!-- 输入框类型 -->
-              <input wx:if="{{question.type === 'input'}}" 
-                     class="form-input" 
-                     placeholder="{{question.placeholder}}" 
-                     value="{{questionnaire[question.field]}}" 
-                     bindinput="onGenericInput" 
-                     data-field="{{question.field}}"
-                     maxlength="{{question.inputMaxLength || -1}}" />
-              
-              <!-- 省市选择器 -->
-              <picker wx:elif="{{question.type === 'region-picker'}}" 
-                      mode="region" 
-                      bindchange="onCityChange" 
-                      value="{{questionnaire.region}}" 
-                      level="city">
-              <view class="form-input picker-input">
-                <text wx:if="{{questionnaire.city}}">{{questionnaire.city}}</text>
-                  <text wx:else class="picker-placeholder">{{question.placeholder}}</text>
-              </view>
-            </picker>
-
-              <!-- 单选题 -->
-              <view wx:elif="{{question.type === 'radio'}}" class="radio-group {{question.field === 'constellation' ? 'wrap' : ''}}">
-                <block wx:for="{{question.options}}" wx:key="*this" wx:for-item="option">
-                  <view class="radio-btn {{question.field === 'constellation' ? 'small' : ''}} {{questionnaire[question.field] === (option.value || option) ? 'active' : ''}}" 
-                        data-field="{{question.field}}" 
-                        data-value="{{option.value || option}}" 
-                        bindtap="onGenericSelect">
-                    {{option.label || option}}
-            </view>
-                </block>
-        </view>
-
-              <!-- 多选题 -->
-              <view wx:elif="{{question.type === 'checkbox'}}" class="checkbox-group">
-                <block wx:if="{{question.field === 'interestTags'}}">
-                  <view wx:for="{{interestOptions}}" wx:key="name" 
-                        class="checkbox-btn {{item.active ? 'active' : ''}}" 
-                        data-value="{{item.name}}" 
-                        bindtap="onInterestToggle">
-                    {{item.name}}
-            </view>
-                </block>
-                <block wx:elif="{{question.field === 'techTrends'}}">
-                  <view wx:for="{{techOptions}}" wx:key="name" 
-                        class="checkbox-btn {{item.active ? 'active' : ''}}" 
-                        data-value="{{item.name}}" 
-                        bindtap="onTechTrendToggle">
-                    {{item.name}}
+      
+      <!-- 个人名片视图 -->
+      <view wx:if="{{viewMode === 'profile'}}" class="profile-card-view">
+        
+        <!-- 名片头部 -->
+        <view class="profile-header">
+          <view class="profile-avatar-container">
+            <image class="profile-avatar" src="{{userInfo.customAvatar && userInfo.avatarUrl ? userInfo.avatarUrl : 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=' + (advancedTags.displayName || userInfo.nickName || 'default')}}"></image>
           </view>
-                </block>
+          <view class="profile-info">
+            <view class="profile-name">{{advancedTags.displayName || userInfo.nickName || '微信用户'}}</view>
+            <view class="profile-subtitle">UnionLink 数字身份</view>
+          </view>
         </view>
 
-              <!-- 其他选项的输入框 -->
-              <input wx:if="{{question.hasOther && questionnaire[question.field] === '其他'}}" 
-                     class="form-input other-input" 
-                     placeholder="{{question.otherPlaceholder}}" 
-                     value="{{questionnaire[question.otherField]}}" 
-                     bindinput="onGenericInput" 
-                     data-field="{{question.otherField}}" />
-              
-              <!-- 条件输入框 -->
-              <input wx:if="{{question.hasInput && questionnaire[question.field] === question.inputCondition}}" 
-                     class="form-input other-input" 
-                     placeholder="{{question.inputPlaceholder}}" 
-                     value="{{questionnaire[question.inputField]}}" 
-                     bindinput="onGenericInput" 
-                     data-field="{{question.inputField}}"
-                     maxlength="{{question.inputMaxLength || -1}}" />
+        <!-- 编码信息卡片 - 隐藏 -->
+        <!-- <view class="encoding-card">
+          <view class="encoding-header">
+            <view class="encoding-title">🔐 你的标签编码</view>
+            <view class="encoding-stats">{{encodingInfo.selectedCount}}/{{encodingInfo.totalTags}} 标签</view>
+          </view>
+          <view class="encoding-display">
+            <text class="encoding-text" selectable="true">{{encodingInfo.encoded}}</text>
+          </view>
+          <view class="encoding-info">
+            <text class="encoding-length">{{encodingInfo.length}} 字符 • 适用于硬件设备快速配对</text>
+          </view>
+        </view> -->
 
-              <!-- 日期输入 (星座用) -->
-              <view wx:if="{{question.hasDateInput && questionnaire[question.field] === '不确定'}}" class="date-input-group">
-                <input class="date-input" type="number" placeholder="月" 
-                       value="{{questionnaire[question.dateField].month}}" 
-                       bindinput="onMonthInput" maxlength="2" />
-                <text>/</text>
-                <input class="date-input" type="number" placeholder="日" 
-                       value="{{questionnaire[question.dateField].day}}" 
-                       bindinput="onDayInput" maxlength="2" />
-        </view>
-
-              <!-- 条件按钮 -->
-              <button wx:if="{{question.hasButton && questionnaire[question.field] === question.buttonCondition}}" 
-                      class="mbti-test-btn" 
-                      bindtap="{{question.buttonAction}}">
-                {{question.buttonText}}
-              </button>
+        <!-- 标签展示区域 -->
+        <view class="tags-display-section">
+          
+          <!-- 专业领域标签 -->
+          <view wx:if="{{advancedTags.professionalTags.length > 0}}" class="tag-group">
+            <view class="tag-group-title">💼 专业领域</view>
+            <view class="tag-group-content">
+              <view wx:for="{{advancedTags.professionalTags}}" wx:key="*this" class="display-tag prof-tag">
+                {{item}}
+              </view>
             </view>
-          </block>
-        </view>
-      </form>
+          </view>
 
-      <!-- 底部导航按钮 -->
-      <view class="nav-buttons">
-        <button class="nav-btn prev-btn" wx:if="{{currentStep > 1}}" bindtap="prevStep">{{texts.prevButton}}</button>
-        <button class="nav-btn next-btn" wx:if="{{currentStep < totalSteps}}" bindtap="nextStep">{{texts.nextButton}}</button>
-        <button class="nav-btn submit-btn" wx:if="{{currentStep === totalSteps}}" bindtap="submitQuestionnaire" loading="{{isSubmitting}}">{{texts.submitButton}}</button>
+          <!-- 兴趣爱好标签 -->
+          <view wx:if="{{advancedTags.interestTags.length > 0}}" class="tag-group">
+            <view class="tag-group-title">🎨 兴趣爱好</view>
+            <view class="tag-group-content">
+              <view wx:for="{{advancedTags.interestTags}}" wx:key="*this" class="display-tag hobby-tag">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 性格特征标签 -->
+          <view wx:if="{{advancedTags.personalityTags.length > 0}}" class="tag-group">
+            <view class="tag-group-title">🧠 性格特征</view>
+            <view class="tag-group-content">
+              <view wx:for="{{advancedTags.personalityTags}}" wx:key="*this" class="display-tag personality-tag">
+                {{item}}
+              </view>
+            </view>
+          </view>
+
+          <!-- 特质标签 -->
+          <view wx:if="{{advancedTags.quirkyTags.length > 0}}" class="tag-group">
+            <view class="tag-group-title">✨ 特质标签</view>
+            <view class="tag-group-content">
+              <view wx:for="{{advancedTags.quirkyTags}}" wx:key="*this" class="display-tag quirky-tag">
+                {{item}}
+              </view>
+            </view>
+          </view>
+        </view>
+
+        <!-- 个人信息区域 -->
+        <view class="personal-info-section">
+          
+          <!-- 联系方式 -->
+          <view wx:if="{{advancedTags.contactInfo}}" class="info-item">
+            <view class="info-label">📞 联系方式</view>
+            <view class="info-content">{{advancedTags.contactInfo}}</view>
+          </view>
+
+          <!-- 个性标签 -->
+          <view wx:if="{{advancedTags.personalTagsText}}" class="info-item">
+            <view class="info-label">🏷️ 个性标签</view>
+            <view class="info-content">{{advancedTags.personalTagsText}}</view>
+          </view>
+
+          <!-- 二维码 -->
+          <view wx:if="{{advancedTags.qrCodeUrl}}" class="info-item qr-section">
+            <view class="info-label">💬 微信二维码</view>
+            <image class="qr-code-display" src="{{advancedTags.qrCodeUrl}}" mode="aspectFit"></image>
+          </view>
+
+          <!-- 个人照片 -->
+          <view wx:if="{{advancedTags.photos.length > 0}}" class="info-item photos-section">
+            <view class="info-label">📷 脸盲友好行为🤝</view>
+            <view class="photos-display">
+              <image wx:for="{{advancedTags.photos}}" wx:key="*this" 
+                     class="photo-display" 
+                     src="{{item}}" 
+                     mode="aspectFill"></image>
+            </view>
+          </view>
+
+          <!-- 闪光阈值 -->
+          <view class="info-item">
+            <view class="info-label">🔥 闪光阈值</view>
+            <view class="info-content">{{advancedTags.threshold}} 个标签相同即闪光</view>
+          </view>
+
+        </view>
+
+        <!-- 操作按钮区域 -->
+        <view class="profile-actions">
+          <button class="action-btn share-btn" bindtap="shareProfile">
+            📤 分享名片
+          </button>
+          <button class="action-btn briefing-btn" bindtap="goToBriefing">
+            🏛️ 查看社群
+          </button>
+        </view>
+
       </view>
 
+      <!-- 问卷编辑视图 -->
+      <view wx:else class="questionnaire-view">
+        <!-- 顶部用户信息 -->
+        <view class="user-header">
+          <view class="avatar-container" bindtap="uploadAvatar">
+            <image class="user-avatar" src="{{userInfo.customAvatar && userInfo.avatarUrl ? userInfo.avatarUrl : 'https://api.dicebear.com/7.x/bottts-neutral/svg?seed=' + (advancedTags.displayName || userInfo.nickName || 'default')}}"></image>
+            <view class="avatar-upload-tip">{{texts.avatarUploadTip}}</view>
+          </view>
+          <view class="user-name">{{advancedTags.displayName || userInfo.nickName || '微信用户'}}</view>
+        </view>
+
+        <!-- 进度条 -->
+        <view class="progress-bar">
+          <view class="progress" style="width: {{(currentStep / totalSteps) * 100}}%;"></view>
+        </view>
+        <view class="progress-text">{{texts.stepFormat.replace('{current}', currentStep).replace('{total}', totalSteps)}}</view>
+        
+        <!-- 标签统计信息 -->
+        <view class="tags-summary">
+          <view class="total-tags">已选择标签：{{totalSelectedTags}} 个</view>
+          <view wx:if="{{totalSelectedTags >= 4}}" class="tags-status success">✓ 已达到最低要求</view>
+          <view wx:else class="tags-status warning">还需选择 {{4 - totalSelectedTags}} 个标签</view>
+        </view>
+
+        <!-- 问卷内容 -->
+        <form class="questionnaire-form">
+          
+          <!-- 第1步：专业领域标签 -->
+          <view wx:if="{{currentStep === 1 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <!-- 分类选择区域 -->
+            <view class="category-selector">
+              <view class="category-tabs">
+                <view wx:for="{{currentStepConfig.categories}}" 
+                      wx:key="name" 
+                      wx:for-item="category"
+                      class="category-tab {{currentCategory[1] === category.name ? 'active' : ''}}"
+                      data-category="{{category.name}}"
+                      bindtap="onCategorySelect">
+                  {{category.name}}
+                </view>
+              </view>
+            </view>
+            
+            <!-- 当前分类下的标签 -->
+            <view class="current-category-tags">
+              <view class="category-title">{{currentCategory[1]}}</view>
+              <view wx:for="{{currentStepConfig.categories}}" 
+                    wx:key="name" 
+                    wx:for-item="category"
+                    wx:if="{{category.name === currentCategory[1] && category.note}}"
+                    class="category-note">
+                {{category.note}}
+              </view>
+              <view class="tags-grid">
+                <block wx:for="{{tagOptions.professional}}" wx:key="name" wx:for-item="tagOption">
+                  <view wx:if="{{tagOption.category === currentCategory[1]}}" 
+                        class="tag-btn {{tagOption.active ? 'active' : ''}}" 
+                        data-value="{{tagOption.name}}" 
+                        bindtap="onProfessionalTagToggle">
+                    {{tagOption.name}}
+                  </view>
+                </block>
+              </view>
+            </view>
+          </view>
+
+          <!-- 第2步：兴趣爱好标签 -->
+          <view wx:if="{{currentStep === 2 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <!-- 分类选择区域 -->
+            <view class="category-selector">
+              <view class="category-tabs">
+                <view wx:for="{{currentStepConfig.categories}}" 
+                      wx:key="name" 
+                      wx:for-item="category"
+                      class="category-tab {{currentCategory[2] === category.name ? 'active' : ''}}"
+                      data-category="{{category.name}}"
+                      bindtap="onCategorySelect">
+                  {{category.name}}
+                </view>
+              </view>
+            </view>
+            
+            <!-- 当前分类下的标签 -->
+            <view class="current-category-tags">
+              <view class="category-title">{{currentCategory[2]}}</view>
+              <view wx:for="{{currentStepConfig.categories}}" 
+                    wx:key="name" 
+                    wx:for-item="category"
+                    wx:if="{{category.name === currentCategory[2] && category.note}}"
+                    class="category-note">
+                {{category.note}}
+              </view>
+              <view class="tags-grid">
+                <block wx:for="{{tagOptions.interest}}" wx:key="name" wx:for-item="tagOption">
+                  <view wx:if="{{tagOption.category === currentCategory[2]}}" 
+                        class="tag-btn {{tagOption.active ? 'active' : ''}}" 
+                        data-value="{{tagOption.name}}" 
+                        bindtap="onInterestTagToggle">
+                    {{tagOption.name}}
+                  </view>
+                </block>
+              </view>
+            </view>
+          </view>
+
+          <!-- 第3步：性格特征标签 -->
+          <view wx:if="{{currentStep === 3 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <!-- 分类选择区域 -->
+            <view class="category-selector">
+              <view class="category-tabs">
+                <view wx:for="{{currentStepConfig.categories}}" 
+                      wx:key="name" 
+                      wx:for-item="category"
+                      class="category-tab {{currentCategory[3] === category.name ? 'active' : ''}}"
+                      data-category="{{category.name}}"
+                      bindtap="onCategorySelect">
+                  {{category.name}}
+                </view>
+              </view>
+            </view>
+            
+            <!-- 当前分类下的标签 -->
+            <view class="current-category-tags">
+              <view class="category-title">{{currentCategory[3]}}</view>
+              <view wx:for="{{currentStepConfig.categories}}" 
+                    wx:key="name" 
+                    wx:for-item="category"
+                    wx:if="{{category.name === currentCategory[3] && category.note}}"
+                    class="category-note">
+                {{category.note}}
+              </view>
+              <view class="tags-grid">
+                <block wx:for="{{tagOptions.personality}}" wx:key="name" wx:for-item="tagOption">
+                  <view wx:if="{{tagOption.category === currentCategory[3]}}" 
+                        class="tag-btn {{currentCategory[3] === '星座' ? 'zodiac-tag' : ''}} {{tagOption.active ? 'active' : ''}}" 
+                        data-value="{{tagOption.name}}" 
+                        bindtap="onPersonalityTagToggle">
+                    {{tagOption.name}}
+                  </view>
+                </block>
+              </view>
+            </view>
+          </view>
+
+          <!-- 第4步：特质标签 -->
+          <view wx:if="{{currentStep === 4 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <!-- 分类选择区域 -->
+            <view class="category-selector">
+              <view class="category-tabs">
+                <view wx:for="{{currentStepConfig.categories}}" 
+                      wx:key="name" 
+                      wx:for-item="category"
+                      class="category-tab {{currentCategory[4] === category.name ? 'active' : ''}}"
+                      data-category="{{category.name}}"
+                      bindtap="onCategorySelect">
+                  {{category.name}}
+                </view>
+              </view>
+            </view>
+            
+            <!-- 当前分类下的标签 -->
+            <view class="current-category-tags">
+              <view class="category-title">{{currentCategory[4]}}</view>
+              <view wx:for="{{currentStepConfig.categories}}" 
+                    wx:key="name" 
+                    wx:for-item="category"
+                    wx:if="{{category.name === currentCategory[4] && category.note}}"
+                    class="category-note">
+                {{category.note}}
+              </view>
+              <view class="tags-grid">
+                <block wx:for="{{tagOptions.quirky}}" wx:key="name" wx:for-item="tagOption">
+                  <view wx:if="{{tagOption.category === currentCategory[4]}}" 
+                        class="tag-btn quirky-tag {{tagOption.active ? 'active' : ''}}" 
+                        data-value="{{tagOption.name}}" 
+                        bindtap="onQuirkyTagToggle">
+                    {{tagOption.name}}
+                  </view>
+                </block>
+              </view>
+            </view>
+          </view>
+
+          <!-- 编码测试按钮（开发环境） -->
+          <view wx:if="{{currentStep === 1}}" class="debug-section">
+            <button class="test-btn" bindtap="testEncoding" type="primary" size="mini">测试编码功能</button>
+          </view>
+
+          <!-- 第5步：个人信息设置 -->
+          <view wx:if="{{currentStep === 5 && currentStepConfig}}" class="step-content">
+            <view class="step-header">
+              <view class="step-title">{{currentStepConfig.title}}</view>
+              <view class="step-subtitle">{{currentStepConfig.subtitle}}</view>
+              <view class="step-description">{{currentStepConfig.description}}</view>
+            </view>
+            
+            <view class="contact-form">
+              <!-- 显示名称 -->
+              <view class="form-item">
+                <view class="form-label required">你希望线下和你互换了信息的朋友怎么称呼你</view>
+                <input class="form-input" 
+                       placeholder="默认是微信昵称" 
+                       value="{{advancedTags.displayName}}" 
+                       data-field="displayName"
+                       bindinput="onContactInput" />
+              </view>
+
+              <!-- 二维码上传 -->
+              <view class="form-item">
+                <view class="form-label">微信二维码</view>
+                <view class="upload-section">
+                  <view wx:if="{{!advancedTags.qrCodeUrl}}" class="upload-btn" bindtap="uploadQRCode">
+                    <view class="upload-icon">📷</view>
+                    <view class="upload-text">上传微信二维码图片</view>
+                  </view>
+                  <view wx:else class="uploaded-image">
+                    <image src="{{advancedTags.qrCodeUrl}}" mode="aspectFit"></image>
+                    <view class="reupload-btn" bindtap="uploadQRCode">重新上传</view>
+                  </view>
+                </view>
+              </view>
+
+              <!-- 联系方式 -->
+              <view class="form-item">
+                <view class="form-label">联系方式</view>
+                <input class="form-input" 
+                       placeholder="微信号、电话号码等" 
+                       value="{{advancedTags.contactInfo}}" 
+                       data-field="contactInfo"
+                       bindinput="onContactInput" />
+              </view>
+
+              <!-- 个性标签 -->
+              <view class="form-item">
+                <view class="form-label">个性tag</view>
+                <textarea class="form-textarea" 
+                          placeholder="如：不喝咖啡会死星人" 
+                          value="{{advancedTags.personalTagsText}}" 
+                          data-field="personalTagsText"
+                          bindinput="onContactInput"
+                          maxlength="200"></textarea>
+              </view>
+
+              <!-- 照片上传 -->
+              <view class="form-item">
+                <view class="form-label">脸盲友好行为🤝</view>
+                <view class="photos-section">
+                  <view class="photos-grid">
+                    <block wx:for="{{advancedTags.photos}}" wx:key="*this" wx:for-index="idx">
+                      <view class="photo-item">
+                        <image src="{{item}}" mode="aspectFill"></image>
+                        <view class="delete-photo" data-index="{{idx}}" bindtap="deletePhoto">×</view>
+                      </view>
+                    </block>
+                    
+                    <view wx:if="{{advancedTags.photos.length < 3}}" class="add-photo" bindtap="uploadPhotos">
+                      <view class="add-icon">+</view>
+                      <view class="add-text">添加照片</view>
+                    </view>
+                  </view>
+                  <view class="photos-hint">选择性地上传自己的照片（最多3张）</view>
+                </view>
+              </view>
+
+              <!-- 闪光阈值信息 -->
+              <view class="form-item">
+                <view class="form-label">🔥 闪光阈值</view>
+                <view class="threshold-info">
+                  <view class="threshold-display-simple">
+                    <text class="threshold-number-simple">{{advancedTags.threshold}}</text>
+                    <text class="threshold-text-simple">个标签相同即闪光</text>
+                  </view>
+                  <view class="threshold-hint">系统默认设置，可在提交后调整</view>
+                </view>
+              </view>
+            </view>
+          </view>
+
+        </form>
+
+        <!-- 底部导航按钮 -->
+        <view class="nav-buttons">
+          <button wx:if="{{currentStep > 1}}" 
+                  class="prev-btn" 
+                  bindtap="prevStep">
+            {{texts.prevButton}}
+          </button>
+
+          <view class="nav-spacer"></view>
+
+          <button wx:if="{{currentStep < totalSteps}}" 
+                  class="next-btn" 
+                  bindtap="nextStep">
+            {{texts.nextButton}}
+          </button>
+
+          <button wx:if="{{currentStep === totalSteps}}" 
+                  class="submit-btn {{isSubmitting ? 'submitting' : ''}}" 
+                  bindtap="submitForm"
+                  disabled="{{isSubmitting}}">
+            {{isSubmitting ? '提交中...' : texts.submitButton}}
+          </button>
+        </view>
+      </view>
     </block>
+  </view>
+  
+  <!-- 浮动编辑按钮 (仅在个人名片视图显示) -->
+  <view wx:if="{{hasUserInfo && viewMode === 'profile'}}" class="floating-edit-btn" bindtap="switchToQuestionnaireView">
+    <view class="edit-icon">✏️</view>
+    <view class="edit-hint">编辑</view>
   </view>
 </view> 

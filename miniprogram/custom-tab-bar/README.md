@@ -5,7 +5,7 @@
 ## 🌟 功能特点
 
 ### 核心功能
-- ✅ **三个主要页面导航**：连接、设备、主页（调整后的顺序）
+- ✅ **三个主要页面导航**：好友列表、设备、主页（调整后的顺序）
 - ✅ **页面状态同步**：自动与当前页面状态保持一致
 - ✅ **流畅切换动画**：0.3秒平滑过渡效果
 - ✅ **点击反馈**：即时的视觉和交互反馈
@@ -32,7 +32,7 @@ custom-tab-bar/
 ### 导航页面列表（重构后的顺序）
 | 索引 | 页面路径 | 显示文本 | 功能描述 |
 |------|----------|----------|----------|
-| 0 | `pages/connect/connect` | 连接 | 社交连接和主题探索中心 |
+| 0 | `pages/connect/connect` | 好友列表 | 好友管理和社交连接中心 |
 | 1 | `pages/device/device` | 设备 | 设备管理和连接状态 |
 | 2 | `pages/index/index` | 主页 | 个人资料和功能入口（移至最右） |
 
@@ -47,7 +47,7 @@ data: {
   list: [       // 导航配置数组（重构后）
     {
       pagePath: "pages/connect/connect",
-      text: "连接"
+      text: "好友列表"
     },
     {
       pagePath: "pages/device/device", 
@@ -122,7 +122,7 @@ data: {
       },
       {
         "pagePath": "pages/connect/connect", 
-        "text": "连接"
+        "text": "好友列表"
       },
       {
         "pagePath": "pages/briefing/briefing",

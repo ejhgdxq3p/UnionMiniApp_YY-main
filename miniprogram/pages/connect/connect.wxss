@@ -93,66 +93,7 @@
   padding-top: 0; /* 修改顶部内边距，为logo和检索框留出空间 */
 }
 
-/* logo和检索框区域 */
-.header-area {
-  width: 100%;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  margin-bottom: 20rpx;
-  padding: 30rpx 0;
-  z-index: 10;
-}
 
-/* logo样式 */
-.union-logo {
-  width: 300rpx;
-  height: 300rpx;
-  position: absolute;
-  top: 10rpx;
-  left: 10rpx;
-  z-index: 11;
-}
-
-/* 检索框样式 */
-.search-bar {
-  background-color: #000;
-  border-radius: 20rpx;
-  box-shadow: none;
-  padding: 24rpx 30rpx;
-  width: 65%;
-  margin-left: 120rpx;
-  margin-top: 100rpx;
-  z-index: 10;
-  position: relative;
-  transition: all 0.3s;
-  border: 1px solid rgba(255, 255, 255, 0.3); /* 添加白色边框 */
-}
-
-.search-bar:active {
-  transform: scale(0.98);
-  box-shadow: none;
-}
-
-.search-text {
-  font-size: 32rpx;
-  font-family: 'italic-font', sans-serif;
-  font-style: italic;
-  font-weight: bold;
-  color: #fff; /* 改为白色 */
-  
-}
-
-.search-hint {
-  font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.6); /* 改为半透明白色 */
-  line-height: 1.4;
-  margin-left: 140rpx;
-  
-  margin-top: 15rpx;
-  max-width: 60%;
-}
 
 
 
@@ -346,127 +287,211 @@
   padding: 4rpx 0;
 }
 
-/* 发光环区域 */
-.glow-orb-container {
+/* 用户统计信息 */
+.user-stats {
+  margin-top: 8rpx;
+}
+
+.stats-text {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 400;
+}
+
+/* 用户详细信息弹窗 */
+.user-detail-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
   display: flex;
-  flex-shrink: 0;
-  width: min(90vw, 400rpx);
-  height: min(90vw, 400rpx);
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 40rpx;
-  margin-bottom: 40rpx;
-  position: relative;
-  z-index: 10;
   align-items: center;
   justify-content: center;
-  /* 增强容器级别的光晕效果 */
-  filter: drop-shadow(0 0 120rpx rgba(255, 255, 255, 0.15));
 }
 
-/* 发光环主体 - 增强发光效果 */
-.glow-orb {
-  width: 240rpx;
-  height: 240rpx;
-  border-radius: 50%;
+.user-detail-content {
   position: relative;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  /* 增强的外部发光效果 */
-  filter: drop-shadow(0 0 40rpx currentColor) 
-          drop-shadow(0 0 80rpx currentColor) 
-          drop-shadow(0 0 120rpx currentColor);
+  width: 90%;
+  max-width: 600rpx;
+  max-height: 80vh;
+  background-color: #000;
+  border-radius: 24rpx;
+  padding: 40rpx;
+  overflow-y: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* 主环结构 */
-/* 主环 - 增大尺寸 */
-.glow-orb::before {
-  content: '';
+.user-detail-close {
   position: absolute;
-  top: 10rpx;
-  left: 10rpx;
-  right: 10rpx;
-  bottom: 10rpx;
+  top: 20rpx;
+  right: 20rpx;
+  width: 60rpx;
+  height: 60rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40rpx;
+  color: rgba(255, 255, 255, 0.6);
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 50%;
-  border: 12rpx solid;
-  border-color: currentColor;
-  background: transparent;
-  animation: ring-pulse 2.5s ease-in-out infinite;
+  z-index: 10;
 }
 
-/* 内环光晕 - 增大尺寸 */
-.orb-inner-glow {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+/* 用户基本信息 */
+.user-detail-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 40rpx;
+  padding-bottom: 30rpx;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.user-detail-avatar {
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 50%;
+  margin-right: 30rpx;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.user-detail-info {
+  flex: 1;
+}
+
+.user-detail-name {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 8rpx;
+}
+
+.user-detail-subtitle {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8rpx;
+}
+
+.user-detail-stats {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* 标签区域 */
+.user-detail-tags {
+  margin-bottom: 30rpx;
+}
+
+.tag-section {
+  margin-bottom: 30rpx;
+}
+
+.tag-section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 16rpx;
+  padding-left: 8rpx;
+  border-left: 4rpx solid #00d4ff;
+}
+
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.tag-item {
+  padding: 8rpx 16rpx;
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20rpx;
+  font-size: 24rpx;
+  color: #fff;
+}
+
+/* 联系信息 */
+.user-detail-contact {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contact-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12rpx;
+}
+
+.contact-info {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 个性标签 */
+.user-detail-personal {
+  margin-bottom: 30rpx;
+  padding: 20rpx;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.personal-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 12rpx;
+}
+
+.personal-text {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+}
+
+/* 微信二维码 */
+.user-detail-qrcode {
+  margin-bottom: 20rpx;
+  padding: 20rpx;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 16rpx;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.qrcode-title {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 16rpx;
+  text-align: center;
+}
+
+.qrcode-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.qrcode-image {
   width: 200rpx;
   height: 200rpx;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 3rpx solid;
-  border-color: transparent currentColor transparent currentColor;
-  animation: inner-ring-rotate 4s linear infinite;
-  opacity: 0.7;
+  border-radius: 12rpx;
+  border: 2px solid rgba(255, 255, 255, 0.2);
 }
 
-/* 外环光晕 - 增大尺寸 */
-.glow-orb::after {
-  content: '';
-  position: absolute;
-  top: 0rpx;
-  left: 0rpx;
-  right: 0rpx;
-  bottom: 0rpx;
-  border-radius: 50%;
-  border: 2rpx solid;
-  border-color: currentColor transparent currentColor transparent;
-  animation: outer-ring-rotate 6s linear infinite reverse;
-  opacity: 0.5;
+.qrcode-hint {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.6);
+  text-align: center;
+  margin-top: 16rpx;
 }
 
-/* 主环脉冲动画 */
-@keyframes ring-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.08);
-    opacity: 1;
-  }
-}
 
-/* 内环旋转动画 */
-@keyframes inner-ring-rotate {
-  from {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-  to {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-/* 外环反向旋转动画 */
-@keyframes outer-ring-rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 点击效果 - 增强发光 */
-.glow-orb-container:active .glow-orb {
-  transform: scale(0.92);
-  filter: drop-shadow(0 0 30rpx currentColor) 
-          drop-shadow(0 0 60rpx currentColor) 
-          drop-shadow(0 0 90rpx currentColor);
-}
-
-.glow-orb-container:active .glow-orb::before {
-  transform: scale(1.1);
-}
 
 /* 歌单式名片列表 - 更改为黑色背景 */
 .music-playlist {

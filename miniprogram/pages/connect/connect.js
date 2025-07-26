@@ -1,14 +1,12 @@
 /**
- * 连接页面 - connect.js
+ * 好友列表页面 - connect.js
  * 
  * 功能说明：
- * 1. 黑胶唱片风格的主题浏览界面
- * 2. 四个主题卡片列表，支持滑动切换
- * 3. 支持触摸滑动、惯性滚动和振动反馈
- * 4. 主题详情查看和介绍展示
+ * 1. 显示用户名片卡片列表，支持滑动切换
+ * 2. 支持触摸滑动、惯性滚动和振动反馈
+ * 3. 用户名片详情查看和介绍展示
  * 
  * 交互设计要点：
- * - 唱片旋转动画：模拟黑胶唱片播放效果
  * - 卡片滚动与缩放：滑动时实现卡片放大聚焦视觉效果
  * - 触摸振动反馈：滑动切换卡片时提供轻微振动
  * - 惯性滚动效果：根据滑动速度实现自然的惯性滑动
@@ -19,7 +17,9 @@
  * 2. 将头像改为方形，类似黑胶唱片的专辑封面
  * 3. 移除了选择指示器，简化界面
  * 4. 优化了滚动体验，提升用户交互感
- * 5. 将用户名片改为四个主题展示
+ * 5. 将主题卡片改为用户名片展示
+ * 6. 删除了广场功能和旋转球体功能
+ * 7. 改为从users_adv集合检索用户数据
  */
 
 // miniprogram/pages/connect/connect.js
@@ -43,7 +43,7 @@ Page({
     moveSpeed: 0,           // 移动速度
     canScroll: false,       // 是否可以滚动
     isDragging: false,      // 是否正在拖动
-    cards: [],              // 主题卡片数据
+    userCards: [],          // 用户名片数据
     isLoading: false,       // 是否正在加载
     loadError: '',          // 加载错误信息
     notes: [                // 注释数据
@@ -52,11 +52,7 @@ Page({
       { id: 3, title: '未来探索派', content: '畅想科技与人文的未来图景' },
       { id: 4, title: '探索人格博弈馆', content: '深入了解人格类型与社交动态' }
     ],
-    linkBall1Angle: -60,    // 连接球1角度
-    linkBall2Angle: 30,     // 连接球2角度
-    linkBall3Angle: 270,    // 连接球3角度
-    discRotation: 0,        // 唱片旋转角度
-    currentTrackIndex: 0,   // 当前选中的主题索引
+    currentTrackIndex: 0,   // 当前选中的用户索引
     startTouchY: 0,         // 触摸开始Y坐标
     lastTouchY: 0,          // 上次触摸Y坐标
     scrollDistance: 0,      // 滚动距离
@@ -68,8 +64,8 @@ Page({
     isScrolling: false,     // 是否正在滚动
     inertiaAnimationId: null, // 惯性动画ID
     isInertiaScrolling: false, // 是否正在惯性滚动
-    showCardPreview: false, // 是否显示主题预览
-    selectedCard: {},       // 选中的主题数据
+    showCardPreview: false, // 是否显示用户预览
+    selectedCard: {},       // 选中的用户数据
     stars: [],              // 背景星星数组
     connections: [],        // 社交连接数据
     loading: false,         // 是否正在加载
@@ -92,6 +88,8 @@ Page({
     // 详细名片相关数据
     showDetailedCard: false, // 是否显示详细名片弹窗
     selectedMember: {},       // 选中的成员数据
+    showUserDetailModal: false, // 是否显示用户详细信息弹窗
+    selectedUserDetail: null,   // 选中的用户详细信息
     // 主题颜色相关
     currentThemeColor: '#00d4ff', // 当前主题颜色
     themeColors: [
@@ -121,7 +119,7 @@ Page({
       scrollOffset: -200 // 设置初始滚动位置，与偏移量保持一致
     });
     
-    this.initThemeCards();
+    this.initUserCards();
     this.generateStars();
     this.initAnimation();
     
@@ -145,9 +143,6 @@ Page({
   onShow() {
     if (typeof this.getTabBar === 'function' && this.getTabBar()) {
       this.getTabBar().updateSelected('/pages/connect/connect');
-    }
-    if (!this.rotationTimer) {
-      this.startDiscRotation();
     }
   },
 
@@ -238,30 +233,13 @@ Page({
    * 清除所有计时器
    */
   clearAllTimers: function() {
-    if (this.rotationTimer) {
-      clearInterval(this.rotationTimer);
-      this.rotationTimer = null;
-    }
     if (this.scrollAnimationTimer) {
       clearTimeout(this.scrollAnimationTimer);
       this.scrollAnimationTimer = null;
     }
   },
 
-  /**
-   * 唱片旋转动画
-   */
-  startDiscRotation: function() {
-    let rotation = this.data.discRotation || 0;
-    
-    this.rotationTimer = setInterval(() => {
-      rotation += 0.5; // 每次旋转0.5度
-      
-      this.setData({
-        discRotation: rotation
-      });
-    }, 50); // 每50ms执行一次
-  },
+
 
   // 跳转到连接图谱页面
   goToConnectionMap: function() {
@@ -277,26 +255,7 @@ Page({
     });
   },
 
-  // 跳转到社群报告页面
-  goToFuzzySearch: function() {
-    // 获取当前选中的主题信息
-    const currentCard = this.data.cards[this.data.currentTrackIndex];
-    const currentTheme = currentCard ? currentCard.name : '';
-    const themeIndex = this.data.currentTrackIndex;
-    
-    console.log('当前选中的主题:', currentTheme, '索引:', themeIndex);
-    
-    wx.navigateTo({
-      url: `/pages/briefing/briefing?theme=${encodeURIComponent(currentTheme)}&themeIndex=${themeIndex}`,
-      fail: function(err) {
-        console.error('跳转失败:', err);
-        wx.showToast({
-          title: '页面跳转失败',
-          icon: 'none'
-        });
-      }
-    });
-  },
+
 
   /**
    * 触摸开始事件
@@ -355,7 +314,7 @@ Page({
     let newScrollOffset = this.data.scrollOffset + scrollDelta;
     
     // 计算当前应该选中的卡片索引
-    const itemCount = this.data.cards.length;
+    const itemCount = this.data.userCards.length;
     if (itemCount > 0) {
       // 添加向上偏移量
       const cardPositionOffset = this.data.cardPositionOffset || -200; // 默认值为-200rpx
@@ -473,7 +432,7 @@ Page({
     const deceleration = 0.004; // 增加减速度
     let velocity = initialVelocity * 15; // 进一步降低初始速度系数
     let scrollOffset = this.data.scrollOffset;
-    const itemCount = this.data.cards.length;
+    const itemCount = this.data.userCards.length;
     const cardPositionOffset = this.data.cardPositionOffset || -200; // 默认值为-200rpx
     
     // 记录上一个索引，用于检测变化
@@ -573,7 +532,7 @@ Page({
    * 对齐到最近的选项
    */
   snapToClosestItem: function() {
-    const itemCount = this.data.cards.length;
+    const itemCount = this.data.userCards.length;
     if (itemCount === 0) return;
     
     // 计算最接近的项目索引
@@ -674,13 +633,13 @@ Page({
    * 设置当前卡片为激活状态（不显示预览）
    */
   setCurrentCardActive: function() {
-    if (this.data.cards.length === 0) return;
+    if (this.data.userCards.length === 0) return;
     
     // 获取当前选中的卡片索引
     const index = this.data.currentTrackIndex;
     
     // 只设置当前卡片为激活状态，不显示预览
-    if (index >= 0 && index < this.data.cards.length) {
+    if (index >= 0 && index < this.data.userCards.length) {
       // 什么都不做，因为active状态是通过视图层的class绑定自动设置的
       console.log('设置卡片激活状态:', index);
     }
@@ -698,16 +657,16 @@ Page({
       const cardPositionOffset = this.data.cardPositionOffset || -200;
       const targetOffset = -index * this.data.itemHeight + cardPositionOffset;
       
-      // 使用动画滚动，然后显示配对用户
+      // 使用动画滚动，然后跳转到用户问卷页面
       this.animateToOffset(targetOffset, index);
       
-      // 动画完成后显示配对用户
+      // 动画完成后跳转到用户问卷页面
       setTimeout(() => {
-        this.showPairedUsers(index);
+        this.onUserCardTap(e);
       }, 300);
     } else {
-      // 已经是中心项，直接显示配对用户
-      this.showPairedUsers(index);
+      // 已经是中心项，直接跳转到用户问卷页面
+      this.onUserCardTap(e);
     }
   },
   
@@ -716,12 +675,12 @@ Page({
    */
   // 【重写】智能配对逻辑：先检查是否已有配对，如果没有则AI匹配
   showPairedUsers: async function(index) {
-    if (index < 0 || index >= this.data.cards.length) {
+    if (index < 0 || index >= this.data.userCards.length) {
       console.error('主题索引无效:', index);
       return;
     }
 
-    const theme = this.data.cards[index];
+    const theme = this.data.userCards[index];
     const classifications = this.data.classifications;
     const currentUserOpenId = this.data.currentUserOpenId;
 
@@ -858,11 +817,267 @@ Page({
   },
 
   /**
+   * 点击用户卡片 - 显示用户详细信息
+   */
+  onUserCardTap: function(e) {
+    const index = e.currentTarget.dataset.index;
+    const card = this.data.userCards[index];
+    
+    if (card && card.userData) {
+      console.log('[ConnectPage] 点击用户卡片:', card.name, 'openid:', card.openid);
+      
+      // 直接显示用户详细信息
+      this.showUserDetail(card.userData);
+    } else {
+      console.error('[ConnectPage] 用户卡片数据无效:', card);
+      wx.showToast({
+        title: '用户信息无效',
+        icon: 'none'
+      });
+    }
+  },
+
+  /**
+   * 显示用户详细信息
+   */
+  showUserDetail: async function(userData) {
+    console.log('[ConnectPage] 显示用户详细信息:', userData);
+    
+    // 构建用户详细信息
+    const userDetail = {
+      name: userData.advancedTags?.displayName || userData.userInfo?.nickName || '未知用户',
+      avatarUrl: userData.userInfo?.avatarUrl || '/images/default-avatar.jpg',
+      professionalTags: userData.advancedTags?.professionalTags || [],
+      interestTags: userData.advancedTags?.interestTags || [],
+      personalityTags: userData.advancedTags?.personalityTags || [],
+      quirkyTags: userData.advancedTags?.quirkyTags || [],
+      contactInfo: userData.advancedTags?.contactInfo || '',
+      personalTagsText: userData.advancedTags?.personalTagsText || '',
+      threshold: userData.advancedTags?.threshold || 3,
+      totalTags: userData.advancedTags?.totalTags || 0,
+      qrCodeUrl: userData.advancedTags?.qrCodeUrl || ''
+    };
+    
+    // 处理二维码URL（如果是云存储文件ID）
+    if (userData.advancedTags?.qrCodeUrl && userData.advancedTags.qrCodeUrl.startsWith('cloud://')) {
+      try {
+        const tempUrlResult = await wx.cloud.getTempFileURL({
+          fileList: [userData.advancedTags.qrCodeUrl]
+        });
+        
+        if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+          const fileInfo = tempUrlResult.fileList[0];
+          if (fileInfo.status === 0) {
+            userDetail.qrCodeUrl = fileInfo.tempFileURL;
+            console.log('[ConnectPage] 二维码URL转换成功:', userDetail.qrCodeUrl);
+          }
+        }
+      } catch (urlError) {
+        console.warn('[ConnectPage] 获取二维码URL失败:', urlError);
+      }
+    }
+    
+    // 显示用户详细信息弹窗
+    this.setData({
+      showUserDetailModal: true,
+      selectedUserDetail: userDetail
+    });
+    
+    console.log('[ConnectPage] 用户详细信息:', userDetail);
+  },
+
+  /**
+   * 关闭用户详细信息弹窗
+   */
+  closeUserDetailModal: function() {
+    this.setData({
+      showUserDetailModal: false,
+      selectedUserDetail: null
+    });
+  },
+
+  /**
+   * 二维码图片加载失败处理
+   */
+  onQRCodeError: function(e) {
+    console.error('[ConnectPage] 二维码图片加载失败:', e);
+    
+    // 隐藏二维码区域
+    this.setData({
+      'selectedUserDetail.qrCodeUrl': ''
+    });
+    
+    wx.showToast({
+      title: '二维码加载失败',
+      icon: 'none',
+      duration: 2000
+    });
+  },
+
+  /**
+   * 二维码长按处理
+   */
+  onQRCodeLongPress: function(e) {
+    console.log('[ConnectPage] 二维码长按事件:', e);
+    
+    // 显示操作菜单
+    wx.showActionSheet({
+      itemList: ['识别二维码', '保存图片', '转发给朋友'],
+      success: (res) => {
+        console.log('[ConnectPage] 用户选择操作:', res.tapIndex);
+        
+        switch (res.tapIndex) {
+          case 0: // 识别二维码
+            this.recognizeQRCode();
+            break;
+          case 1: // 保存图片
+            this.saveQRCodeImage();
+            break;
+          case 2: // 转发给朋友
+            this.shareQRCode();
+            break;
+        }
+      },
+      fail: (err) => {
+        console.log('[ConnectPage] 用户取消操作');
+      }
+    });
+  },
+
+  /**
+   * 识别二维码
+   */
+  recognizeQRCode: function() {
+    const qrCodeUrl = this.data.selectedUserDetail.qrCodeUrl;
+    if (!qrCodeUrl) {
+      wx.showToast({
+        title: '二维码不可用',
+        icon: 'none'
+      });
+      return;
+    }
+
+    // 使用微信的二维码识别功能
+    wx.previewImage({
+      urls: [qrCodeUrl],
+      success: () => {
+        wx.showToast({
+          title: '请在预览中长按识别',
+          icon: 'none',
+          duration: 2000
+        });
+      },
+      fail: (err) => {
+        console.error('[ConnectPage] 预览图片失败:', err);
+        wx.showToast({
+          title: '识别失败，请重试',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  /**
+   * 保存二维码图片
+   */
+  saveQRCodeImage: function() {
+    const qrCodeUrl = this.data.selectedUserDetail.qrCodeUrl;
+    if (!qrCodeUrl) {
+      wx.showToast({
+        title: '二维码不可用',
+        icon: 'none'
+      });
+      return;
+    }
+
+    wx.showLoading({
+      title: '保存中...'
+    });
+
+    // 下载图片到本地
+    wx.downloadFile({
+      url: qrCodeUrl,
+      success: (res) => {
+        if (res.statusCode === 200) {
+          // 保存到相册
+          wx.saveImageToPhotosAlbum({
+            filePath: res.tempFilePath,
+            success: () => {
+              wx.hideLoading();
+              wx.showToast({
+                title: '保存成功',
+                icon: 'success'
+              });
+            },
+            fail: (err) => {
+              wx.hideLoading();
+              console.error('[ConnectPage] 保存图片失败:', err);
+              if (err.errMsg.includes('auth deny')) {
+                wx.showModal({
+                  title: '保存失败',
+                  content: '需要您授权保存图片到相册',
+                  showCancel: false
+                });
+              } else {
+                wx.showToast({
+                  title: '保存失败',
+                  icon: 'none'
+                });
+              }
+            }
+          });
+        } else {
+          wx.hideLoading();
+          wx.showToast({
+            title: '下载失败',
+            icon: 'none'
+          });
+        }
+      },
+      fail: (err) => {
+        wx.hideLoading();
+        console.error('[ConnectPage] 下载图片失败:', err);
+        wx.showToast({
+          title: '下载失败',
+          icon: 'none'
+        });
+      }
+    });
+  },
+
+  /**
+   * 转发二维码
+   */
+  shareQRCode: function() {
+    const userDetail = this.data.selectedUserDetail;
+    const shareContent = `推荐好友：${userDetail.name}\n${userDetail.contactInfo || ''}\n标签：${userDetail.totalTags}个`;
+    
+    wx.showModal({
+      title: '转发给朋友',
+      content: shareContent,
+      confirmText: '复制内容',
+      success: (res) => {
+        if (res.confirm) {
+          wx.setClipboardData({
+            data: shareContent,
+            success: () => {
+              wx.showToast({
+                title: '内容已复制',
+                icon: 'success'
+              });
+            }
+          });
+        }
+      }
+    });
+  },
+
+  /**
    * 显示主题详情
    */
   showCardDetail: function(index) {
-    if (index >= 0 && index < this.data.cards.length) {
-      const card = this.data.cards[index];
+    if (index >= 0 && index < this.data.userCards.length) {
+      const card = this.data.userCards[index];
       this.setData({
         selectedCard: card,
         showCardPreview: true
@@ -880,80 +1095,182 @@ Page({
   },
 
   /**
-   * 初始化主题卡片数据
+   * 初始化用户名片卡片
    */
-  initThemeCards: function() {
-    const themeCards = [
-      {
-        id: 1,
-        name: "数码轨迹博物馆",
-        subtitle: "Digital Trace Museum",
-        description: "数码成长史 × 情怀 × 数字人格进化",
-        theme: "数码轨迹博物馆",
-        color: "#6366f1",
-        avatarUrl: "https://api.dicebear.com/7.x/shapes/svg?seed=digital&backgroundColor=6366f1",
-        details: {
-          concept: "数码成长史 × 情怀 × 数字人格进化",
-          features: ["🧑‍🚀 原始信号守望者", "🕹️ 掌上文明缔造者", "🌐 云端原居民", "🧭 设备极简主义者"],
-          philosophy: "每一代设备，都是一段人生的缩影。"
-        }
-      },
-      {
-        id: 2,
-        name: "感官沉浸研究所",
-        subtitle: "Sensory Immersion Lab",
-        description: "感官偏好 × 沉浸 × 体验风格",
-        theme: "感官沉浸研究所",
-        color: "#ec4899",
-        avatarUrl: "https://api.dicebear.com/7.x/shapes/svg?seed=sensory&backgroundColor=ec4899",
-        details: {
-          concept: "感官偏好 × 沉浸 × 体验风格",
-          features: ["🎨 视觉主义者", "🎧 声波感应者", "🤲 触觉掌控者", "🧠 思维沉浸者"],
-          philosophy: "沉浸于感官，体验于心灵。"
-        }
-      },
-      {
-        id: 3,
-        name: "行为方式匹配站",
-        subtitle: "Behavior Match Station",
-        description: "探索风格 × 好奇心 × 展会行动轨迹",
-        theme: "行为方式匹配站",
-        color: "#10b981",
-        avatarUrl: "https://api.dicebear.com/7.x/shapes/svg?seed=behavior&backgroundColor=10b981",
-        details: {
-          concept: "探索风格 × 好奇心 × 展会行动轨迹",
-          features: ["🚀 快速尝鲜玩家", "👓 信息观察者", "📷 内容创作者", "🛸 安静探索者"],
-          philosophy: "每一种行为，都是独特的探索。"
-        }
-      },
-      {
-        id: 4,
-        name: "能量节律星球",
-        subtitle: "Energy Rhythm Planet",
-        description: "作息偏好 × 星座 × MBTI × 状态映射",
-        theme: "能量节律星球",
-        color: "#f59e0b",
-        avatarUrl: "https://api.dicebear.com/7.x/shapes/svg?seed=energy&backgroundColor=f59e0b",
-        details: {
-          concept: "作息偏好 × 星座 × MBTI × 状态映射",
-          features: ["🌞 晨光规划者", "☀️ 午间聚能人", "🌌 夜间灵感族", "🌫️ 随境波动者"],
-          philosophy: "节律不同，能量各异。"
-        }
-      }
-    ];
+  initUserCards: async function() {
+    console.log('[ConnectPage] 初始化用户名片卡片');
+    this.setData({ isLoading: true, loadError: '' });
 
-    this.setData({
-      cards: themeCards,
-      isLoading: false
-    });
+    try {
+      // 从users_adv集合获取所有用户数据
+      const users = await this.getUsersFromUsersAdv();
+      
+      if (users && users.length > 0) {
+        // 转换为卡片格式
+        const userCards = users.map((user, index) => ({
+          id: index + 1,
+          openid: user.openid,
+          name: user.advancedTags?.displayName || user.userInfo?.nickName || '未知用户',
+          subtitle: user.userInfo?.nickName || '',
+          description: this.generateUserDescription(user),
+          theme: user.advancedTags?.displayName || '用户名片',
+          color: this.getUserThemeColor(index),
+          avatarUrl: user.userInfo?.avatarUrl || '/images/default-avatar.jpg',
+          userData: user, // 保存完整的用户数据
+          encodedTags: user.encodedTags || '',
+          totalTags: user.advancedTags?.totalTags || 0,
+          threshold: user.advancedTags?.threshold || 3,
+          details: {
+            concept: this.generateUserDescription(user),
+            features: this.getUserTags(user),
+            philosophy: user.advancedTags?.personalTagsText || '暂无个性标签'
+          }
+        }));
+
+        console.log('[ConnectPage] 用户名片卡片初始化成功:', userCards.length, '个用户');
+        
+        this.setData({
+          userCards: userCards,
+          isLoading: false
+        });
+      } else {
+        console.log('[ConnectPage] 未找到用户数据');
+        this.setData({
+          userCards: [],
+          isLoading: false,
+          loadError: '暂无用户数据'
+        });
+      }
+    } catch (error) {
+      console.error('[ConnectPage] 初始化用户名片失败:', error);
+      this.setData({
+        isLoading: false,
+        loadError: '加载用户数据失败'
+      });
+    }
   },
 
   /**
-   * 获取交互用户名片 - 改为获取主题数据
+   * 从users_adv集合获取用户数据
+   */
+  getUsersFromUsersAdv: async function() {
+    try {
+      console.log('[ConnectPage] 开始从users_adv获取用户数据');
+      
+      const db = wx.cloud.database();
+      const MAX_LIMIT = 100;
+      
+      // 获取总数
+      const countResult = await db.collection('users_adv').count();
+      const total = countResult.total;
+      console.log('[ConnectPage] users_adv集合总用户数:', total);
+      
+      if (total === 0) {
+        return [];
+      }
+      
+      // 分批获取所有用户数据
+      const batchTimes = Math.ceil(total / MAX_LIMIT);
+      const allUsers = [];
+      
+      for (let i = 0; i < batchTimes; i++) {
+        const result = await db.collection('users_adv')
+          .skip(i * MAX_LIMIT)
+          .limit(MAX_LIMIT)
+          .orderBy('updateTime', 'desc')
+          .get();
+          
+        if (result.data && result.data.length > 0) {
+          allUsers.push(...result.data);
+        }
+      }
+      
+      console.log('[ConnectPage] 成功获取用户数据:', allUsers.length, '个用户');
+      
+      // 处理头像URL
+      for (let user of allUsers) {
+        if (user.userInfo && user.userInfo.avatarFileID) {
+          try {
+            const tempUrlResult = await wx.cloud.getTempFileURL({
+              fileList: [user.userInfo.avatarFileID]
+            });
+            
+            if (tempUrlResult.fileList && tempUrlResult.fileList.length > 0) {
+              const fileInfo = tempUrlResult.fileList[0];
+              if (fileInfo.status === 0) {
+                user.userInfo.avatarUrl = fileInfo.tempFileURL;
+              }
+            }
+          } catch (urlError) {
+            console.warn('[ConnectPage] 获取头像URL失败:', urlError);
+          }
+        }
+      }
+      
+      return allUsers;
+    } catch (error) {
+      console.error('[ConnectPage] 从users_adv获取用户数据失败:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * 生成用户描述
+   */
+  generateUserDescription: function(user) {
+    const tags = user.advancedTags;
+    if (!tags) return '暂无标签信息';
+    
+    const professionalTags = tags.professionalTags || [];
+    const interestTags = tags.interestTags || [];
+    const personalityTags = tags.personalityTags || [];
+    const quirkyTags = tags.quirkyTags || [];
+    
+    // 组合标签生成描述
+    const allTags = [...professionalTags, ...interestTags, ...personalityTags, ...quirkyTags];
+    
+    if (allTags.length === 0) return '暂无标签信息';
+    
+    // 取前3个标签作为描述
+    const displayTags = allTags.slice(0, 3);
+    return displayTags.join(' · ');
+  },
+
+  /**
+   * 获取用户标签列表
+   */
+  getUserTags: function(user) {
+    const tags = user.advancedTags;
+    if (!tags) return ['暂无标签'];
+    
+    const professionalTags = tags.professionalTags || [];
+    const interestTags = tags.interestTags || [];
+    const personalityTags = tags.personalityTags || [];
+    const quirkyTags = tags.quirkyTags || [];
+    
+    // 组合所有标签
+    const allTags = [...professionalTags, ...interestTags, ...personalityTags, ...quirkyTags];
+    
+    if (allTags.length === 0) return ['暂无标签'];
+    
+    // 返回前6个标签
+    return allTags.slice(0, 6);
+  },
+
+  /**
+   * 获取用户主题颜色
+   */
+  getUserThemeColor: function(index) {
+    const colors = this.data.themeColors;
+    return colors[index % colors.length];
+  },
+
+  /**
+   * 获取交互用户名片
    */
   getInteractionCards: function() {
-    // 直接调用初始化主题卡片
-    this.initThemeCards();
+    // 直接调用初始化用户名片卡片
+    this.initUserCards();
   },
 
   /**
@@ -964,17 +1281,17 @@ Page({
     console.error(`主题图片加载失败，索引: ${index}`, e);
     
     // 获取当前主题卡片
-    const card = this.data.cards[index];
+    const card = this.data.userCards[index];
     if (card) {
       console.log('加载失败的图片URL:', card.avatarUrl);
       
       // 可以在这里设置备用图片或清空URL
       // 简单将该卡片的头像URL设为空
-      const newCards = [...this.data.cards];
+      const newCards = [...this.data.userCards];
       newCards[index].avatarUrl = '';
       
       this.setData({
-        cards: newCards
+        userCards: newCards
       });
     }
   },
@@ -1041,9 +1358,6 @@ Page({
    * 初始化动画
    */
   initAnimation() {
-    // 启动唱片旋转
-    this.startDiscRotation();
-    
     // 设置触摸性能优化，提高滚动流畅度
     this.setTouchPerfOptions();
     
@@ -1278,7 +1592,7 @@ Page({
    */
   getCurrentThemeColor: function() {
     const currentThemeIndex = this.data.currentTrackIndex;
-    const currentCard = this.data.cards[currentThemeIndex];
+    const currentCard = this.data.userCards[currentThemeIndex];
     
     // 首先检查卡片是否已有缓存的用户颜色
     if (currentCard && currentCard.userCachedColor) {
@@ -1324,7 +1638,7 @@ Page({
    * 缓存用户颜色到卡片数据中
    */
   cacheUserColorToCard: function(themeIndex, color) {
-    const cards = [...this.data.cards];
+    const cards = [...this.data.userCards];
     if (cards[themeIndex]) {
       cards[themeIndex].userCachedColor = color;
       this.setData({ cards });
@@ -1348,7 +1662,7 @@ Page({
    */
   loadCommunityMembers: function() {
     const currentThemeIndex = this.data.currentTrackIndex;
-    const currentTheme = this.data.cards[currentThemeIndex];
+    const currentTheme = this.data.userCards[currentThemeIndex];
     const classifications = this.data.classifications; // 使用新的数据结构
     const currentUserOpenid = this.data.currentUserOpenId; // 使用新的字段名
     
@@ -1554,7 +1868,7 @@ Page({
       }
       
       // 生成缓存键
-      const currentTheme = this.data.cards[this.data.currentTrackIndex];
+      const currentTheme = this.data.userCards[this.data.currentTrackIndex];
       const themeName = currentTheme?.name || '未知主题';
       const cacheKey = this.generateMatchReasonCacheKey(currentUserOpenid, selectedMember.openid, themeName);
       
@@ -1631,7 +1945,7 @@ Page({
    * 构建AI匹配理由提示词
    */
   buildMatchReasonPrompt: function(currentUser, targetUser) {
-    const currentTheme = this.data.cards[this.data.currentTrackIndex];
+    const currentTheme = this.data.userCards[this.data.currentTrackIndex];
     const themeName = currentTheme?.name || '未知主题';
     
     return `你是一个专业的社交配对分析师。请分析两个用户在"${themeName}"主题下的匹配度，并给出详细的匹配理由。

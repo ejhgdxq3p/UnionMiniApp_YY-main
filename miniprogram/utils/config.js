@@ -3,7 +3,7 @@
 
 const Config = {
   // 当前主题（可通过切换不同主题来改变所有文字）
-  currentTheme: 'union-digital-life',
+  currentTheme: 'union-advanced-tags',
 
   // 主题配置
   themes: {
@@ -191,6 +191,130 @@ const Config = {
           modalTitle: '匹配原因',
           unknownUser: '匿名用户'
         }
+      }
+    },
+
+    // Union高级标签主题
+    'union-advanced-tags': {
+      // 应用基础信息
+      app: {
+        name: 'UnionLink',
+        fullName: 'Union 智能标签社群',
+        description: '通过标签找到志同道合的朋友'
+      },
+
+      // 登录页面
+      login: {
+        welcomeTitle: 'Union 智能标签配对',
+        welcomeDesc: '选择你的标签，找到志同道合的朋友',
+        loginButton: '微信快速登录',
+        avatar: {
+          uploadTip: '点击更换头像',
+          uploadSuccess: '头像上传成功',
+          uploadFail: '头像上传失败',
+          processingFail: '头像处理失败'
+        }
+      },
+
+      // 问卷页面
+      questionnaire: {
+        stepFormat: '第 {current} / {total} 步',
+        minTagsHint: '至少选择 {min} 个标签',
+        maxTagsHint: '最多选择 {max} 个标签',
+        tagCountHint: '已选择 {selected} 个标签',
+        thresholdHint: '选择 {count} 个标签相同即可闪光连接',
+        buttons: {
+          login: '微信快速登录',
+          prev: '上一步',
+          next: '下一步',
+          submit: '完成设置'
+        },
+        messages: {
+          loginRequired: '请先登录',
+          validateError: '请至少选择4个标签才能继续',
+          submitSuccess: '标签设置成功！正在跳转...',
+          submitError: '提交失败，请重试',
+          saveSuccess: '数据已保存'
+        }
+      },
+
+      // 社群报告页面 (briefing)
+      briefing: {
+        title: '社群漫游指南',
+        titleWithTheme: '{theme} 社群广场',
+        subtitle: '看看你在哪个有趣的"次元"',
+        subtitleWithTheme: '探索同主题下的部落成员',
+        loading: '正在加载社群信息...',
+        empty: '暂无社群信息',
+        members: {
+          joined: '{count}人已加入',
+          noMembers: '暂无成员',
+          sectionTitle: '社群成员',
+          scrollHint: '上下滑动查看更多成员',
+          viewProfile: '查看详情'
+        },
+        modal: {
+          close: '×',
+          unknownCommunity: '未知社群',
+          unknownTheme: '未知主题',
+          noDescription: '暂无社群描述',
+          anonymousUser: '匿名用户',
+          totalMembers: '共{count}人'
+        }
+      },
+
+      // 社交连接页面 (connect)
+      connect: {
+        search: {
+          placeholder: '去广场，看看大家所在的部落',
+          hint: '探索当前主题下的社群分类'
+        },
+        loading: {
+          text: '加载中...',
+          error: '加载失败，请重试',
+          retry: '重试',
+          empty: '暂无主题',
+          emptySubtext: '主题正在加载中...'
+        },
+        pairing: {
+          title: '与你本主题智能配对的伙伴',
+          tapHint: '碰',
+          modalTitle: 'AI配对理由',
+          unknownUser: '匿名用户'
+        },
+        community: {
+          unknownTheme: '未知主题',
+          unknownCommunity: '未知社群',
+          noDescription: '暂无社群描述',
+          memberCount: '共{total}人，其他成员{other}人',
+          memberStatus: '社群伙伴',
+          sectionTitle: '社群成员',
+          featuresTitle: '主题特征',
+          scrollHint: '上下滑动查看更多成员'
+        },
+        detailedCard: {
+          basicInfo: '基本信息',
+          commonTags: '共同标签',
+          communityInfo: '社群信息',
+          contactAction: '联系TA',
+          viewMore: '查看更多'
+        }
+      },
+
+      // 通用提示信息
+      common: {
+        confirm: '确认',
+        cancel: '取消',
+        close: '关闭',
+        loading: '加载中...',
+        error: '加载失败',
+        retry: '重试',
+        noData: '暂无数据',
+        networkError: '网络连接失败',
+        serverError: '服务器错误',
+        unknownError: '未知错误',
+        success: '操作成功',
+        fail: '操作失败'
       }
     }
   },
@@ -554,6 +678,360 @@ const Config = {
         submit: '提交问卷',
         login: '微信登录开始问卷'
       }
+    }
+  },
+
+  // 高级标签问卷配置
+  advancedTagsConfig: {
+    meta: {
+      theme: 'union-advanced-tags',
+      totalSteps: 5,
+      minTotalTags: 4, // 至少选择4个标签
+      maxTotalTags: -1 // 无上限
+    },
+
+    // 标签编码配置
+    encoding: {
+      // 字符映射表：6-bit (0-63) -> 字符
+      charMap: 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-',
+      
+      // 编码函数：将所有用户选择的标签转换为编码字符串
+      encode: function(allSelectedTags) {
+        const charMap = this.charMap;
+        let result = '';
+        
+        // 按每6个标签为一组进行编码
+        for (let i = 0; i < allSelectedTags.length; i += 6) {
+          const group = allSelectedTags.slice(i, i + 6);
+          
+          // 将6个标签的0/1状态转换为6位二进制
+          let binaryStr = '';
+          for (let j = 0; j < 6; j++) {
+            binaryStr += (j < group.length && group[j]) ? '1' : '0';
+          }
+          
+          // 转换为十进制并映射到字符
+          const decimal = parseInt(binaryStr, 2);
+          result += charMap[decimal];
+        }
+        
+        return result;
+      },
+      
+      // 解码函数：将编码字符串还原为标签状态数组
+      decode: function(encodedString) {
+        const charMap = this.charMap;
+        const result = [];
+        
+        for (let i = 0; i < encodedString.length; i++) {
+          const char = encodedString[i];
+          const decimal = charMap.indexOf(char);
+          
+          if (decimal === -1) continue;
+          
+          // 转换为6位二进制
+          const binaryStr = decimal.toString(2).padStart(6, '0');
+          
+          // 解析每一位
+          for (let j = 0; j < 6; j++) {
+            result.push(binaryStr[j] === '1');
+          }
+        }
+        
+        return result;
+      },
+      
+      // 获取所有标签的扁平化列表（用于编码映射）
+      getAllTagsList: function(stepsConfig) {
+        const allTags = [];
+        
+        // 遍历所有步骤和分类，收集所有标签
+        stepsConfig.forEach(step => {
+          if (step.categories) {
+            step.categories.forEach(category => {
+              category.tags.forEach(tag => {
+                allTags.push({
+                  tag: tag,
+                  category: category.name,
+                  step: step.id
+                });
+              });
+            });
+          }
+        });
+        
+        return allTags;
+      },
+      
+      // 计算编码后的字符串长度
+      getEncodedLength: function(stepsConfig) {
+        const totalTags = this.getAllTagsList(stepsConfig).length;
+        return Math.ceil(totalTags / 6);
+      }
+    },
+
+    steps: [
+      {
+        id: 1,
+        title: '专业领域 Tags',
+        subtitle: '你熟悉或工作的方向',
+        description: '选择你擅长或正在从事的专业领域',
+        minTags: 1,
+        maxTags: -1,
+        categories: [
+          {
+            name: '软件与算法',
+            tags: [
+              '前端开发', '后端开发', '全栈开发', '移动开发', 'Web3 / 区块链',
+              '人工智能', '数据科学', '算法竞赛', '大模型 / AIGC', '安全 / 渗透'
+            ]
+          },
+          {
+            name: '硬件与工程',
+            tags: [
+              '嵌入式开发', '单片机 / Arduino', '电路设计', '机器人', '3D建模 / 打印',
+              '工业自动化', '材料工程', '可穿戴设备', '模拟仿真', '通信 / 射频'
+            ]
+          },
+          {
+            name: '设计与体验',
+            tags: [
+              '平面设计', 'UI/UX设计', '产品设计', '工业设计', '动效设计',
+              '空间 / 展陈设计', '交互艺术', '游戏美术', '服务设计', '信息可视化'
+            ]
+          },
+          {
+            name: '产品与商业',
+            tags: [
+              '产品经理', '项目管理', '商业模式设计', '品牌策略', '增长黑客',
+              '用户研究', '市场分析', '内容策划', '公共演讲', '演示 / Pitch 达人'
+            ]
+          },
+          {
+            name: '人文与跨界',
+            tags: [
+              '心理学', '教育科技', '社会创新', '可持续发展', '法律 / 知识产权',
+              '艺术策展', '公共事务', '哲学 & 思辨', '科学传播', '创业经验者'
+            ]
+          }
+        ]
+      },
+      {
+        id: 2,
+        title: '兴趣爱好 Tags',
+        subtitle: '你平时喜欢做什么',
+        description: '选择你真正喜欢和享受的活动',
+        minTags: 1,
+        maxTags: -1,
+        categories: [
+          {
+            name: '创作与表达',
+            tags: [
+              '摄影', '视频剪辑', '绘画', '写作', '播客制作',
+              '写歌词 / 写诗', '表演 / 舞台', '即兴戏剧', '建筑模型', '脑洞设定狂'
+            ]
+          },
+          {
+            name: '听觉与感知',
+            tags: [
+              '摇滚乐', '古典乐', '电子乐', '嘻哈 / R&B', 'ASMR',
+              '电影配乐', '音乐创作', '玩乐器', '唱歌达人', 'KTV杀手'
+            ]
+          },
+          {
+            name: '游戏与次元',
+            tags: [
+              '主机游戏', '独立游戏', '二次元', '剧本杀', 'TRPG',
+              '桌游 / 卡牌', '解谜游戏', '音游 / 音乐节奏', '模拟经营', 'Minecraft 神人'
+            ]
+          },
+          {
+            name: '身体与生活',
+            tags: [
+              '烹饪 / 美食', '宠物控', '植物 / 园艺', '跑步', '徒步',
+              '健身', '瑜伽 / 冥想', '手工 / DIY', '穿搭 / 美学', '收纳 / 整理'
+            ]
+          },
+          {
+            name: '探索与分享',
+            tags: [
+              '旅行控', '城市漫游者', '盲盒收藏', '科普讲解', '星座塔罗',
+              '微博狂热用户', '小红书内容创作', '喜欢办活动', '喜欢带人玩', '热衷网络梗'
+            ]
+          }
+        ]
+      },
+      {
+        id: 3,
+        title: '性格 / MBTI / 星座 Tags',
+        subtitle: '你是什么样的人',
+        description: '选择最符合你性格特征的标签',
+        minTags: 1,
+        maxTags: -1,
+        categories: [
+          {
+            name: 'MBTI 维度',
+            note: '可从中选2-3个',
+            tags: [
+              'INTJ：战略家', 'INTP：逻辑学者', 'INFJ：提灯者', 'INFP：理想主义者',
+              'ISTJ：检察官', 'ISTP：工匠', 'ISFJ：守护者', 'ISFP：艺术家',
+              'ENTJ：指挥官', 'ENTP：辩论者', 'ENFJ：主人公', 'ENFP：竞选者',
+              'ESTJ：执行者', 'ESTP：挑战者', 'ESFJ：照料者', 'ESFP：表演者'
+            ]
+          },
+          {
+            name: '性格关键词',
+            tags: [
+              '社牛', '社恐', '情绪稳定', '情绪起伏大', '安静细腻', '热情外放',
+              '控制欲强', '佛系随缘', '思辨型', '行动力强', '拖延症', '爱爆改计划',
+              '话多有点吵', '安静不出声', '自我要求高', '喜欢照顾别人'
+            ]
+          },
+          {
+            name: '星座',
+            note: '直接12选1',
+            tags: [
+              '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座',
+              '天秤座', '天蝎座', '射手座', '摩羯座', '水瓶座', '双鱼座'
+            ]
+          }
+        ]
+      },
+      {
+        id: 4,
+        title: '闪光小癖好 / 彩蛋型标签',
+        subtitle: '可选',
+        description: '用于灯光联动、彩蛋机制、特殊配对、引发共鸣与惊喜破冰',
+        minTags: 0,
+        maxTags: -1,
+        categories: [
+          {
+            name: '🧠 脑内小宇宙类',
+            tags: [
+              '睡前一定要脑补一部自己的剧',
+              '经常跟自己对话并觉得对方很懂我',
+              '会突然陷入对某个无解问题的思考（比如：我是谁？）',
+              '曾经认真思考过穿越回古代能靠什么谋生',
+              '看过"象牙塔"之类冷门纪录片并爱上了它'
+            ]
+          },
+          {
+            name: '🍵 怪癖型生活习惯',
+            tags: [
+              '不喝咖啡活不了',
+              '一天不洗头就浑身难受',
+              '手机铃声一定要静音（响铃焦虑）',
+              '一定要带自己专属的水杯/枕头出门',
+              '喜欢把时间精确到分钟：13:47出门才刚刚好'
+            ]
+          },
+          {
+            name: '🧙‍♀️ 神秘力量派',
+            tags: [
+              '会算塔罗 / 星盘 / 紫微斗数',
+              '知道自己上升星座并知道这代表什么',
+              '有个命名过的水晶（而且相信它）',
+              '会背周易六十四卦顺序',
+              '曾尝试主动记录梦境，还真有灵感出现'
+            ]
+          },
+          {
+            name: '🍜 生活技能彩蛋',
+            tags: [
+              '擅长做饭 / 泡茶 / 调酒',
+              '会修各种奇奇怪怪的小东西',
+              '会五笔打字 / 会打算盘 / 会写毛笔字',
+              '能徒手换灯泡、解乱码、接wifi',
+              '有自己独门泡面配方'
+            ]
+          },
+          {
+            name: '🎨 感性体验者',
+            tags: [
+              '对颜色特别敏感（#E6A9EC是心头好）',
+              '喜欢孤独，但不拒绝热闹',
+              '写过诗 or 歌词，并偷偷保存了下来',
+              '有收藏配色灵感图的癖好',
+              '看剧只看配角演技，爱上冷门角色'
+            ]
+          },
+          {
+            name: '🌀 社交怪咖系',
+            tags: [
+              '记不住脸，只记气质',
+              '朋友圈从不点赞，但全都认真看完',
+              '能社交，但之后需要恢复能量两天',
+              '明明是INFP但社牛得像ENFJ',
+              '拥有多个小号，只用来观察世界'
+            ]
+          },
+          {
+            name: '🎁 彩蛋型身份',
+            tags: [
+              '有豆瓣账号并且认真写过短评',
+              '曾匿名发过爆款帖子 / 作品',
+              '一年总有几天会消失社交网络',
+              '有一首"人生BGM"，在心中反复播放',
+              '是朋友眼中的"万能解决机 / 核心陪跑者 / 情绪回收站"之一'
+            ]
+          }
+        ]
+      },
+      {
+        id: 5,
+        title: '个人信息设置',
+        subtitle: '让朋友更好地认识你',
+        description: '设置你的联系方式和个人介绍',
+        minTags: 0,
+        maxTags: 0,
+        fields: [
+          {
+            name: 'qrCode',
+            label: '微信二维码',
+            type: 'image',
+            required: false,
+            placeholder: '上传微信二维码图片'
+          },
+          {
+            name: 'contactInfo',
+            label: '联系方式',
+            type: 'input',
+            required: false,
+            placeholder: '微信号、电话号码等'
+          },
+          {
+            name: 'displayName',
+            label: '你希望线下和你互换了信息的朋友怎么称呼你',
+            type: 'input',
+            required: true,
+            defaultValue: '微信昵称',
+            placeholder: '默认是微信昵称'
+          },
+          {
+            name: 'personalTags',
+            label: '个性tag',
+            type: 'textarea',
+            required: false,
+            placeholder: '如：不喝咖啡会死星人'
+          },
+          {
+            name: 'photos',
+            label: '脸盲友好行为🤝',
+            type: 'images',
+            required: false,
+            maxCount: 3,
+            placeholder: '选择性地上传自己的照片'
+          }
+        ]
+      }
+    ],
+
+    // 闪光阈值设置
+    threshold: {
+      default: 3, // 默认3个标签相同
+      min: 1,
+      max: 10,
+      description: '设置多少个标签相同时开始闪光连接'
     }
   }
 };
